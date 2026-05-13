@@ -69,6 +69,10 @@ coverage/
 version.h
 config.h
 
+# Generated dependency files
+src/dep/*.dep.*
+*.dep.*
+
 # Lua compiled files
 *.luac
 
