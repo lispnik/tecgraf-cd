@@ -1,0 +1,393 @@
+cmake_minimum_required(VERSION 3.16)
+project(CD VERSION 5.14.0 LANGUAGES C CXX)
+
+# Set C and C++ standards
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
+
+# Options for different backends
+option(CD_ENABLE_CAIRO "Enable Cairo backend" ON)
+option(CD_ENABLE_XRENDER "Enable X11 XRender backend" ON)
+option(CD_ENABLE_GL "Enable OpenGL backend" ON)
+option(CD_ENABLE_PDF "Enable PDF backend" ON)
+option(CD_ENABLE_IM "Enable IM integration" ON)
+option(CD_ENABLE_PPTX "Enable PPTX backend" ON)
+option(CD_ENABLE_DIRECT2D "Enable Direct2D backend (Windows only)" WIN32)
+option(CD_ENABLE_GDIPLUS "Enable GDI+ backend (Windows only)" WIN32)
+option(CD_ENABLE_LUA "Enable Lua bindings" ON)
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
+# Platform detection
+if(WIN32)
+    set(CD_PLATFORM_WINDOWS TRUE)
+elseif(APPLE)
+    set(CD_PLATFORM_MACOS TRUE)
+elseif(UNIX)
+    set(CD_PLATFORM_LINUX TRUE)
+endif()
+
+# Find dependencies
+find_package(PkgConfig)
+
+# Cairo
+if(CD_ENABLE_CAIRO AND NOT WIN32)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(CAIRO cairo)
+        pkg_check_modules(PANGOCAIRO pangocairo)
+    endif()
+endif()
+
+# X11 and XRender
+if(CD_ENABLE_XRENDER AND CD_PLATFORM_LINUX)
+    find_package(X11)
+    if(X11_FOUND)
+        find_path(XRENDER_INCLUDE_DIR X11/extensions/Xrender.h ${X11_INCLUDE_DIR})
+        find_library(XRENDER_LIBRARY Xrender)
+    endif()
+endif()
+
+# OpenGL
+if(CD_ENABLE_GL)
+    find_package(OpenGL)
+    if(APPLE)
+        find_library(OPENGL_FRAMEWORK OpenGL)
+    endif()
+endif()
+
+# FreeType (for text rendering)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(FREETYPE freetype2)
+endif()
+
+# IM integration - look for our fork first
+if(CD_ENABLE_IM)
+    # Try to find our IM fork
+    find_path(IM_INCLUDE_DIR im.h
+        HINTS
+            ${CMAKE_SOURCE_DIR}/../im-git/include
+            ${CMAKE_SOURCE_DIR}/../im/include
+            /usr/local/include
+            /usr/include
+    )
+    find_library(IM_LIBRARY
+        NAMES im libim
+        HINTS
+            ${CMAKE_SOURCE_DIR}/../im-git/lib
+            ${CMAKE_SOURCE_DIR}/../im/lib
+            /usr/local/lib
+            /usr/lib
+    )
+    if(IM_INCLUDE_DIR AND IM_LIBRARY)
+        set(IM_FOUND TRUE)
+    endif()
+endif()
+
+# Lua
+if(CD_ENABLE_LUA)
+    find_package(Lua)
+endif()
+
+# Include directories
+include_directories(include)
+include_directories(src)
+
+# Core CD library sources
+set(CD_CORE_SOURCES
+    src/cd.c
+    src/cd_active.c
+    src/cd_attributes.c
+    src/cd_bitmap.c
+    src/cd_image.c
+    src/cd_primitives.c
+    src/cd_text.c
+    src/cd_util.c
+    src/cd_vectortext.c
+    src/wd.c
+    src/wdhdcpy.c
+    src/rgb2map.c
+)
+
+# Driver sources
+set(CD_DRIVER_SOURCES
+    src/drv/cddebug.c
+    src/drv/cdpicture.c
+    src/drv/cdirgb.c
+    src/drv/cdmf.c
+)
+
+# Platform-specific sources
+if(CD_PLATFORM_WINDOWS)
+    list(APPEND CD_DRIVER_SOURCES
+        src/drv/cd0wmf.c
+        src/drv/cd0emf.c
+        src/drv/cd0prn.c
+    )
+    if(CD_ENABLE_GDIPLUS)
+        file(GLOB GDIPLUS_SOURCES src/gdiplus/*.cpp)
+        list(APPEND CD_DRIVER_SOURCES ${GDIPLUS_SOURCES})
+    endif()
+    if(CD_ENABLE_DIRECT2D)
+        file(GLOB DIRECT2D_SOURCES src/direct2d/*.cpp)
+        list(APPEND CD_DRIVER_SOURCES ${DIRECT2D_SOURCES})
+    endif()
+    file(GLOB WIN32_SOURCES src/win32/*.c)
+    list(APPEND CD_DRIVER_SOURCES ${WIN32_SOURCES})
+elseif(CD_PLATFORM_LINUX)
+    file(GLOB X11_SOURCES src/x11/*.c)
+    list(APPEND CD_DRIVER_SOURCES ${X11_SOURCES})
+    if(CD_ENABLE_XRENDER AND X11_FOUND AND XRENDER_LIBRARY)
+        file(GLOB XRENDER_SOURCES src/xrender/*.c)
+        list(APPEND CD_DRIVER_SOURCES ${XRENDER_SOURCES})
+    endif()
+    if(CD_ENABLE_CAIRO AND CAIRO_FOUND)
+        file(GLOB CAIRO_SOURCES src/cairo/*.c)
+        list(APPEND CD_DRIVER_SOURCES ${CAIRO_SOURCES})
+    endif()
+elseif(CD_PLATFORM_MACOS)
+    # Use X11 on macOS for now (could add native Cocoa backend later)
+    find_package(X11)
+    if(X11_FOUND)
+        file(GLOB X11_SOURCES src/x11/*.c)
+        list(APPEND CD_DRIVER_SOURCES ${X11_SOURCES})
+    endif()
+endif()
+
+# Additional drivers
+if(CD_ENABLE_GL AND OPENGL_FOUND)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cdgl.c)
+    if(NOT APPLE)
+        list(APPEND CD_DRIVER_SOURCES src/drv/cdgl_ftgl_stubs.c)
+    endif()
+endif()
+
+if(CD_ENABLE_PDF)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cdpdf.c)
+endif()
+
+if(CD_ENABLE_PPTX)
+    list(APPEND CD_DRIVER_SOURCES
+        src/drv/cdpptx.c
+        src/drv/pptx.c
+    )
+    file(GLOB MINIZIP_SOURCES src/minizip/*.c)
+    list(APPEND CD_DRIVER_SOURCES ${MINIZIP_SOURCES})
+endif()
+
+# CGM support
+file(GLOB CGM_SOURCES src/intcgm/*.c)
+list(APPEND CD_DRIVER_SOURCES ${CGM_SOURCES})
+
+# SVG support
+file(GLOB SVG_SOURCES src/svg/*.c)
+list(APPEND CD_DRIVER_SOURCES ${SVG_SOURCES})
+
+# SIM support
+file(GLOB SIM_SOURCES src/sim/*.c)
+list(APPEND CD_DRIVER_SOURCES ${SIM_SOURCES})
+
+# IM integration
+if(CD_ENABLE_IM AND IM_FOUND)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cdim.c)
+endif()
+
+# Create main CD library
+add_library(cd ${CD_CORE_SOURCES} ${CD_DRIVER_SOURCES})
+
+# Set up interface include directories
+target_include_directories(cd
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# Set library properties
+set_target_properties(cd PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    PUBLIC_HEADER "include/cd.h;include/wd.h;include/cd_old.h"
+)
+
+# Compiler definitions
+target_compile_definitions(cd PRIVATE
+    CD_VERSION="${PROJECT_VERSION}"
+    CD_COPYRIGHT="Copyright (C) 1994-2020 Tecgraf/PUC-Rio"
+)
+
+if(BUILD_SHARED_LIBS)
+    target_compile_definitions(cd PRIVATE CD_DLL_EXPORT)
+endif()
+
+# Platform-specific definitions and linking
+if(CD_PLATFORM_WINDOWS)
+    target_compile_definitions(cd PRIVATE WIN32 _WIN32)
+    target_link_libraries(cd PRIVATE
+        user32 gdi32 shell32 comdlg32 ole32 oleaut32 uuid
+    )
+    if(CD_ENABLE_GDIPLUS)
+        target_link_libraries(cd PRIVATE gdiplus)
+        target_compile_definitions(cd PRIVATE CD_ENABLE_GDIPLUS)
+    endif()
+    if(CD_ENABLE_DIRECT2D)
+        target_link_libraries(cd PRIVATE d2d1 dwrite)
+        target_compile_definitions(cd PRIVATE CD_ENABLE_DIRECT2D)
+    endif()
+elseif(CD_PLATFORM_LINUX)
+    if(X11_FOUND)
+        target_include_directories(cd PRIVATE ${X11_INCLUDE_DIR})
+        target_link_libraries(cd PRIVATE ${X11_LIBRARIES})
+        target_compile_definitions(cd PRIVATE CD_X11)
+    endif()
+    if(CD_ENABLE_XRENDER AND XRENDER_LIBRARY)
+        target_include_directories(cd PRIVATE ${XRENDER_INCLUDE_DIR})
+        target_link_libraries(cd PRIVATE ${XRENDER_LIBRARY})
+        target_compile_definitions(cd PRIVATE CD_ENABLE_XRENDER)
+    endif()
+elseif(CD_PLATFORM_MACOS)
+    if(X11_FOUND)
+        target_include_directories(cd PRIVATE ${X11_INCLUDE_DIR})
+        target_link_libraries(cd PRIVATE ${X11_LIBRARIES})
+        target_compile_definitions(cd PRIVATE CD_X11)
+    endif()
+    target_link_libraries(cd PRIVATE "-framework CoreGraphics" "-framework CoreText")
+endif()
+
+# Cairo backend
+if(CD_ENABLE_CAIRO AND CAIRO_FOUND)
+    target_include_directories(cd PRIVATE ${CAIRO_INCLUDE_DIRS})
+    target_link_libraries(cd PRIVATE ${CAIRO_LIBRARIES})
+    target_compile_definitions(cd PRIVATE CD_ENABLE_CAIRO)
+    if(PANGOCAIRO_FOUND)
+        target_include_directories(cd PRIVATE ${PANGOCAIRO_INCLUDE_DIRS})
+        target_link_libraries(cd PRIVATE ${PANGOCAIRO_LIBRARIES})
+    endif()
+endif()
+
+# OpenGL backend
+if(CD_ENABLE_GL AND OPENGL_FOUND)
+    target_include_directories(cd PRIVATE ${OPENGL_INCLUDE_DIR})
+    if(APPLE)
+        target_link_libraries(cd PRIVATE ${OPENGL_FRAMEWORK})
+    else()
+        target_link_libraries(cd PRIVATE ${OPENGL_LIBRARIES})
+    endif()
+    target_compile_definitions(cd PRIVATE CD_ENABLE_GL)
+endif()
+
+# FreeType
+if(FREETYPE_FOUND)
+    target_include_directories(cd PRIVATE ${FREETYPE_INCLUDE_DIRS})
+    target_link_libraries(cd PRIVATE ${FREETYPE_LIBRARIES})
+endif()
+
+# IM integration
+if(CD_ENABLE_IM AND IM_FOUND)
+    target_include_directories(cd PRIVATE ${IM_INCLUDE_DIR})
+    target_link_libraries(cd PRIVATE ${IM_LIBRARY})
+    target_compile_definitions(cd PRIVATE CD_ENABLE_IM)
+endif()
+
+# Math library
+if(UNIX)
+    target_link_libraries(cd PRIVATE m)
+endif()
+
+# Lua bindings
+if(CD_ENABLE_LUA AND LUA_FOUND)
+    file(GLOB CDLUA_SOURCES src/lua5/*.c)
+    add_library(cdlua ${CDLUA_SOURCES})
+    target_include_directories(cdlua PRIVATE ${LUA_INCLUDE_DIR})
+    target_link_libraries(cdlua PRIVATE cd ${LUA_LIBRARIES})
+    set_target_properties(cdlua PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+endif()
+
+# Installation
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(TARGETS cd
+    EXPORT CDTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+if(CD_ENABLE_LUA AND LUA_FOUND)
+    install(TARGETS cdlua
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
+
+# Install additional headers
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Install pkg-config file
+configure_file(cd.pc.in cd.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cd.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)
+
+# Install CMake config files
+write_basic_package_version_file(
+    CDConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    CDConfig.cmake.in
+    CDConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CD
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/CDConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/CDConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CD
+)
+
+# Export targets
+install(EXPORT CDTargets
+    FILE CDTargets.cmake
+    NAMESPACE CD::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CD
+)
+
+# Add export to build tree
+export(TARGETS cd
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/CDTargets.cmake
+    NAMESPACE CD::
+)
+
+# Tests and examples (optional)
+option(CD_BUILD_TESTS "Build CD tests" OFF)
+if(CD_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
+
+# Print configuration summary
+message(STATUS "CD Configuration Summary:")
+message(STATUS "  Version: ${PROJECT_VERSION}")
+message(STATUS "  Platform: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Shared libs: ${BUILD_SHARED_LIBS}")
+message(STATUS "  Cairo backend: ${CD_ENABLE_CAIRO}")
+message(STATUS "  XRender backend: ${CD_ENABLE_XRENDER}")
+message(STATUS "  OpenGL backend: ${CD_ENABLE_GL}")
+message(STATUS "  PDF backend: ${CD_ENABLE_PDF}")
+message(STATUS "  IM integration: ${CD_ENABLE_IM}")
+message(STATUS "  Lua bindings: ${CD_ENABLE_LUA}")
+if(CD_PLATFORM_WINDOWS)
+    message(STATUS "  GDI+ backend: ${CD_ENABLE_GDIPLUS}")
+    message(STATUS "  Direct2D backend: ${CD_ENABLE_DIRECT2D}")
+endif()

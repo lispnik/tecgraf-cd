@@ -1,0 +1,115 @@
+# SVN files
+.svn/
+
+# Build directories
+build/
+build-*/
+install/
+out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Compiled object files
+*.o
+*.obj
+*.lo
+*.slo
+*.ko
+
+# Compiled dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled static libraries
+*.a
+*.la
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.ilk
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Package files
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Test outputs
+Testing/
+test_results/
+coverage/
+
+# Generated files
+version.h
+config.h
+
+# Lua compiled files
+*.luac
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# Log files
+*.log
+
+# Core dumps
+core
+*.core
+
+# Clang/GCC specific
+compile_commands.json
+.clangd/
+
+# Windows specific
+*.manifest
+*.pch
+*.user
+*.ncb
+*.suo
+*.vcproj.*.user
+*.vcxproj.user
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Legacy build system
+obj/
+lib/
+bin/
+*.mak
+tec_uname

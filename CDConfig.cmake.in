@@ -1,0 +1,14 @@
+# CDConfig.cmake - Find CD library
+
+@PACKAGE_INIT@
+
+set(CD_VERSION "@PROJECT_VERSION@")
+
+# Import targets
+include("${CMAKE_CURRENT_LIST_DIR}/CDTargets.cmake")
+
+# Variables for backwards compatibility
+set(CD_LIBRARIES CD::cd)
+get_target_property(CD_INCLUDE_DIRS CD::cd INTERFACE_INCLUDE_DIRECTORIES)
+
+check_required_components(CD)
