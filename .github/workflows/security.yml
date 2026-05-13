@@ -50,7 +50,8 @@ jobs:
           libtiff5-dev \
           libpng-dev \
           libjpeg-dev \
-          zlib1g-dev
+          zlib1g-dev \
+          libexif-dev
 
     - name: Checkout IM dependency
       uses: actions/checkout@v4
@@ -116,6 +117,7 @@ jobs:
           libpng-dev \
           libjpeg-dev \
           zlib1g-dev \
+          libexif-dev \
           clang
 
     - name: Checkout IM dependency
@@ -191,7 +193,8 @@ jobs:
           libtiff5-dev \
           libpng-dev \
           libjpeg-dev \
-          zlib1g-dev
+          zlib1g-dev \
+          libexif-dev
 
     - name: Run cppcheck
       run: |

@@ -64,7 +64,8 @@ jobs:
           libtiff5-dev \
           libpng-dev \
           libjpeg-dev \
-          zlib1g-dev
+          zlib1g-dev \
+          libexif-dev
 
     - name: Install system dependencies (macOS)
       if: matrix.platform == 'macos'
@@ -78,7 +79,8 @@ jobs:
           lua \
           libtiff \
           libpng \
-          jpeg
+          jpeg \
+          libexif
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
