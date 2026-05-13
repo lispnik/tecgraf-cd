@@ -14,6 +14,8 @@ option(CD_ENABLE_IM "Enable IM integration" ON)
 option(CD_ENABLE_PPTX "Enable PPTX backend" ON)
 option(CD_ENABLE_DIRECT2D "Enable Direct2D backend (Windows only)" WIN32)
 option(CD_ENABLE_GDIPLUS "Enable GDI+ backend (Windows only)" WIN32)
+option(CD_ENABLE_GDK "Enable GDK backend (Linux)" ${CD_PLATFORM_LINUX})
+option(CD_ENABLE_HAIKU "Enable Haiku backend (Haiku OS)" ${CD_PLATFORM_HAIKU})
 option(CD_ENABLE_LUA "Enable Lua bindings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
@@ -22,6 +24,8 @@ if(WIN32)
     set(CD_PLATFORM_WINDOWS TRUE)
 elseif(APPLE)
     set(CD_PLATFORM_MACOS TRUE)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    set(CD_PLATFORM_HAIKU TRUE)
 elseif(UNIX)
     set(CD_PLATFORM_LINUX TRUE)
 endif()
@@ -34,6 +38,17 @@ if(CD_ENABLE_CAIRO AND NOT WIN32)
     if(PKG_CONFIG_FOUND)
         pkg_check_modules(CAIRO cairo)
         pkg_check_modules(PANGOCAIRO pangocairo)
+    endif()
+endif()
+
+# GDK
+if(CD_ENABLE_GDK AND CD_PLATFORM_LINUX)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(GDK gdk-3.0)
+        if(NOT GDK_FOUND)
+            # Try GTK+ 2.0 as fallback
+            pkg_check_modules(GDK gdk-2.0)
+        endif()
     endif()
 endif()
 
@@ -145,12 +160,22 @@ elseif(CD_PLATFORM_LINUX)
         file(GLOB CAIRO_SOURCES src/cairo/*.c)
         list(APPEND CD_DRIVER_SOURCES ${CAIRO_SOURCES})
     endif()
+    if(CD_ENABLE_GDK AND GDK_FOUND)
+        file(GLOB GDK_SOURCES src/gdk/*.c)
+        list(APPEND CD_DRIVER_SOURCES ${GDK_SOURCES})
+    endif()
 elseif(CD_PLATFORM_MACOS)
     # Use X11 on macOS for now (could add native Cocoa backend later)
     find_package(X11)
     if(X11_FOUND)
         file(GLOB X11_SOURCES src/x11/*.c)
         list(APPEND CD_DRIVER_SOURCES ${X11_SOURCES})
+    endif()
+elseif(CD_PLATFORM_HAIKU)
+    # Haiku platform support
+    if(CD_ENABLE_HAIKU)
+        file(GLOB HAIKU_SOURCES src/haiku/*.cpp)
+        list(APPEND CD_DRIVER_SOURCES ${HAIKU_SOURCES})
     endif()
 endif()
 
@@ -211,6 +236,13 @@ set_target_properties(cd PROPERTIES
     PUBLIC_HEADER "include/cd.h;include/wd.h;include/cd_old.h"
 )
 
+# Windows .def file support for symbol export
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(cd PROPERTIES
+        LINK_DEF_FILE_FLAG ${CMAKE_CURRENT_SOURCE_DIR}/src/cd.def
+    )
+endif()
+
 # Compiler definitions
 # Don't redefine CD_VERSION and CD_COPYRIGHT as they're in cd.h
 
@@ -250,6 +282,17 @@ elseif(CD_PLATFORM_MACOS)
         target_compile_definitions(cd PRIVATE CD_X11)
     endif()
     target_link_libraries(cd PRIVATE "-framework CoreGraphics" "-framework CoreText")
+elseif(CD_PLATFORM_HAIKU)
+    # Haiku-specific libraries
+    target_link_libraries(cd PRIVATE be)
+    target_compile_definitions(cd PRIVATE CD_HAIKU)
+endif()
+
+# GDK backend (can be used on Linux and potentially other platforms)
+if(CD_ENABLE_GDK AND GDK_FOUND)
+    target_include_directories(cd PRIVATE ${GDK_INCLUDE_DIRS})
+    target_link_libraries(cd PRIVATE ${GDK_LIBRARIES})
+    target_compile_definitions(cd PRIVATE CD_ENABLE_GDK)
 endif()
 
 # Cairo backend
@@ -390,6 +433,12 @@ message(STATUS "  Test suite: ${CD_BUILD_TESTS}")
 if(CD_PLATFORM_WINDOWS)
     message(STATUS "  GDI+ backend: ${CD_ENABLE_GDIPLUS}")
     message(STATUS "  Direct2D backend: ${CD_ENABLE_DIRECT2D}")
+endif()
+if(CD_PLATFORM_LINUX)
+    message(STATUS "  GDK backend: ${CD_ENABLE_GDK}")
+endif()
+if(CD_PLATFORM_HAIKU)
+    message(STATUS "  Haiku backend: ${CD_ENABLE_HAIKU}")
 endif()
 
 if(CD_BUILD_TESTS)

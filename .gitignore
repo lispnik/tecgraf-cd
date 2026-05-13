@@ -73,6 +73,19 @@ config.h
 src/dep/*.dep.*
 *.dep.*
 
+# Legacy build system files (converted to CMake)
+*.mak
+mak.*/
+make_uname*
+*.vcproj
+*.vcxproj
+*.sln
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.ncb
+*.user
+
 # Lua compiled files
 *.luac
 
