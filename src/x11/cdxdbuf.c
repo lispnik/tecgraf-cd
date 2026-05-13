@@ -64,7 +64,7 @@ static cdAttribute killdbuffer_attrib =
   get_killdbuffer_attrib
 };
 
-static void cdcreatecanvas(cdCanvas* canvas, cdCanvas* canvas_dbuffer)
+static void cdcreatecanvas_internal(cdCanvas* canvas, cdCanvas* canvas_dbuffer)
 {
   int w, h;
   cdCtxCanvas* ctxcanvas;
@@ -121,7 +121,7 @@ static int cdactivate(cdCtxCanvas* ctxcanvas)
 
     /* rebuild the image and the canvas */
     canvas->ctxcanvas = NULL;
-    cdcreatecanvas(canvas, canvas_dbuffer);
+    cdcreatecanvas_internal(canvas, canvas_dbuffer);
     if (!canvas->ctxcanvas)
     {
       canvas->ctxcanvas = old_ctxcanvas;
@@ -149,6 +149,12 @@ static void cdinittable(cdCanvas* canvas)
   canvas->cxDeactivate = cddeactivate;
   canvas->cxFlush = cdflush;
   canvas->cxKillCanvas = cdkillcanvas;
+}
+
+static void cdcreatecanvas(cdCanvas* canvas, void* data)
+{
+  cdCanvas* canvas_dbuffer = (cdCanvas*)data;
+  cdcreatecanvas_internal(canvas, canvas_dbuffer);
 }
 
 static cdContext cdDBufferContext =

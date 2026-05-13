@@ -90,6 +90,8 @@ endif()
 # Include directories
 include_directories(include)
 include_directories(src)
+include_directories(src/sim)
+include_directories(src/svg)
 
 # Core CD library sources
 set(CD_CORE_SOURCES
@@ -210,10 +212,7 @@ set_target_properties(cd PROPERTIES
 )
 
 # Compiler definitions
-target_compile_definitions(cd PRIVATE
-    CD_VERSION="${PROJECT_VERSION}"
-    CD_COPYRIGHT="Copyright (C) 1994-2020 Tecgraf/PUC-Rio"
-)
+# Don't redefine CD_VERSION and CD_COPYRIGHT as they're in cd.h
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(cd PRIVATE CD_DLL_EXPORT)
@@ -387,7 +386,24 @@ message(STATUS "  OpenGL backend: ${CD_ENABLE_GL}")
 message(STATUS "  PDF backend: ${CD_ENABLE_PDF}")
 message(STATUS "  IM integration: ${CD_ENABLE_IM}")
 message(STATUS "  Lua bindings: ${CD_ENABLE_LUA}")
+message(STATUS "  Test suite: ${CD_BUILD_TESTS}")
 if(CD_PLATFORM_WINDOWS)
     message(STATUS "  GDI+ backend: ${CD_ENABLE_GDIPLUS}")
     message(STATUS "  Direct2D backend: ${CD_ENABLE_DIRECT2D}")
+endif()
+
+if(CD_BUILD_TESTS)
+    message(STATUS "")
+    message(STATUS "Test Suite Features:")
+    message(STATUS "  - Comprehensive primitive testing")
+    message(STATUS "  - Attributes and styling tests")
+    message(STATUS "  - Text rendering validation")
+    message(STATUS "  - Image operations testing")
+    message(STATUS "  - Backend compatibility tests")
+    message(STATUS "  - Edge cases and error handling")
+    message(STATUS "  - Performance benchmarks")
+    message(STATUS "  - Visual output generation")
+    message(STATUS "")
+    message(STATUS "To run tests: make test_cd")
+    message(STATUS "Visual tests: make test_cd_visual")
 endif()

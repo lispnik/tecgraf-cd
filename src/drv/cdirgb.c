@@ -1967,7 +1967,7 @@ static void cdflushDB(cdCtxCanvas *ctxcanvas)
   cdCanvasWriteMode(canvas_dbuffer, old_writemode);
 }
 
-static void cdcreatecanvasDB(cdCanvas* canvas, cdCanvas* canvas_dbuffer)
+static void cdcreatecanvasDB_internal(cdCanvas* canvas, cdCanvas* canvas_dbuffer)
 {
   char rgbdata[100];
   int w, h;
@@ -2011,7 +2011,7 @@ static int cdactivateDB(cdCtxCanvas *ctxcanvas)
     /* rebuild the image and the canvas */
     canvas->ctxcanvas = NULL;
     old_ctxcanvas->kill_dbuffer = 0;
-    cdcreatecanvasDB(canvas, canvas_dbuffer);
+    cdcreatecanvasDB_internal(canvas, canvas_dbuffer);
     if (!canvas->ctxcanvas)
     {
       canvas->ctxcanvas = old_ctxcanvas;
@@ -2035,6 +2035,12 @@ static void cddeactivateDB(cdCtxCanvas *ctxcanvas)
   cdCanvas* canvas_dbuffer = ctxcanvas->canvas_dbuffer;
   /* this is done in the canvas_dbuffer context */
   cdCanvasDeactivate(canvas_dbuffer);
+}
+
+static void cdcreatecanvasDB(cdCanvas* canvas, void* data)
+{
+  cdCanvas* canvas_dbuffer = (cdCanvas*)data;
+  cdcreatecanvasDB_internal(canvas, canvas_dbuffer);
 }
 
 static void cdinittableDB(cdCanvas* canvas)
