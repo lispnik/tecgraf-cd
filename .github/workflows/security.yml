@@ -53,7 +53,7 @@ jobs:
       with:
         repository: lispnik/tecgraf-im
         path: im-git
-        ref: macos-system-libs-and-fixes
+        ref: master
 
     - name: Build IM dependency
       run: |
@@ -115,7 +115,7 @@ jobs:
       with:
         repository: lispnik/tecgraf-im
         path: im-git
-        ref: macos-system-libs-and-fixes
+        ref: master
 
     - name: Build IM dependency
       run: |

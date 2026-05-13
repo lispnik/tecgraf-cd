@@ -82,7 +82,7 @@ jobs:
       with:
         repository: lispnik/tecgraf-im
         path: im-git
-        ref: macos-system-libs-and-fixes
+        ref: master
 
     - name: Build IM dependency (Linux/macOS)
       if: matrix.platform != 'windows'
