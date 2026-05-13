@@ -60,7 +60,11 @@ jobs:
           libfreetype6-dev \
           libgl1-mesa-dev \
           libglu1-mesa-dev \
-          liblua5.3-dev
+          liblua5.3-dev \
+          libtiff5-dev \
+          libpng-dev \
+          libjpeg-dev \
+          zlib1g-dev
 
     - name: Install system dependencies (macOS)
       if: matrix.platform == 'macos'
@@ -71,7 +75,10 @@ jobs:
           cairo \
           pango \
           freetype \
-          lua
+          lua \
+          libtiff \
+          libpng \
+          jpeg
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
