@@ -14,6 +14,7 @@
 #ifdef CD_FTGL_NEEDS_STUBS
 
 #include <FTGL/ftgl.h>
+#include <stdio.h>
 
 /* ftglGetFontMaxWidth: tecgraf's helper returns the font's maximum glyph
  * advance width. Upstream FTGL has no direct equivalent. Use the advance
@@ -21,6 +22,9 @@
  * Returns 0 if the font is invalid (matches tecgraf behavior). */
 float ftglGetFontMaxWidth(FTGLfont* font)
 {
+  #ifdef CD_DEBUG_STUBS
+  fprintf(stderr, "[STUB] ftglGetFontMaxWidth called with font=%p\n", (void*)font);
+  #endif
   if (!font) return 0.0f;
   return ftglGetFontAdvance(font, "M");
 }
@@ -30,6 +34,9 @@ float ftglGetFontMaxWidth(FTGLfont* font)
  * marginally softer but still legible. No-op stub. */
 void ftglSetNearestFilter(FTGLfont* font, int nearest)
 {
+  #ifdef CD_DEBUG_STUBS
+  fprintf(stderr, "[STUB] ftglSetNearestFilter called with font=%p, nearest=%d\n", (void*)font, nearest);
+  #endif
   (void)font; (void)nearest;
 }
 
