@@ -183,9 +183,8 @@ endif()
 # Additional drivers
 if(CD_ENABLE_GL AND OPENGL_FOUND)
     list(APPEND CD_DRIVER_SOURCES src/drv/cdgl.c)
-    if(NOT APPLE)
-        list(APPEND CD_DRIVER_SOURCES src/drv/cdgl_ftgl_stubs.c)
-    endif()
+    # Include FTGL stubs for all platforms since Homebrew FTGL lacks tecgraf extensions
+    list(APPEND CD_DRIVER_SOURCES src/drv/cdgl_ftgl_stubs.c)
 endif()
 
 if(CD_ENABLE_PDF)
@@ -322,7 +321,7 @@ if(CD_ENABLE_GL AND OPENGL_FOUND)
     else()
         target_link_libraries(cd PRIVATE ${OPENGL_LIBRARIES})
     endif()
-    target_compile_definitions(cd PRIVATE CD_ENABLE_GL)
+    target_compile_definitions(cd PRIVATE CD_ENABLE_GL CD_FTGL_NEEDS_STUBS)
 endif()
 
 # FreeType
