@@ -139,7 +139,7 @@ int test_font_rendering() {
     cdCanvasActivate(canvas);
     cdCanvasBackground(canvas, CD_WHITE);
     cdCanvasClear(canvas);
-    cdCanvasForeground(canvas, CD_BLACK);
+    cdCanvasForeground(canvas, CD_BLUE);
 
     int tests_passed = 0;
 
