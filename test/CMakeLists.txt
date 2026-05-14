@@ -79,9 +79,12 @@ add_test(NAME basic_test COMMAND cd_basic_test)
 #     add_cd_test(test_cairo_backend tests/test_cairo_backend.c)
 # endif()
 
-# if(CD_ENABLE_GL AND OPENGL_FOUND)
-#     add_cd_test(test_opengl_backend tests/test_opengl_backend.c)
-# endif()
+# OpenGL backend tests
+if(CD_ENABLE_GL)
+    add_cd_test(test_opengl_backend tests/test_opengl_backend.c)
+    add_cd_test(test_opengl_simple tests/test_opengl_simple.c)
+    add_cd_test(test_opengl_graphics tests/test_opengl_graphics.c)
+endif()
 
 # Custom targets
 add_custom_target(test_cd
@@ -100,6 +103,18 @@ add_custom_target(test_cd_visual
     DEPENDS test_primitives test_attributes test_text test_svg
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# Add OpenGL visual test target
+if(CD_ENABLE_GL)
+    add_custom_target(test_cd_opengl
+        COMMAND ${CMAKE_COMMAND} -E echo "Running OpenGL tests..."
+        COMMAND test_opengl_backend
+        COMMAND test_opengl_simple
+        COMMAND test_opengl_graphics
+        DEPENDS test_opengl_backend test_opengl_simple test_opengl_graphics
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endif()
 
 # Install test data files if they exist
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
