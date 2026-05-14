@@ -315,11 +315,17 @@ endif()
 
 # OpenGL backend
 if(CD_ENABLE_GL AND OPENGL_FOUND)
-    target_include_directories(cd PRIVATE ${OPENGL_INCLUDE_DIR})
+    # Find FTGL library for OpenGL text rendering
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FTGL REQUIRED ftgl)
+
+    target_include_directories(cd PRIVATE ${OPENGL_INCLUDE_DIR} ${FTGL_INCLUDE_DIRS})
+    target_link_directories(cd PRIVATE ${FTGL_LIBRARY_DIRS})
+
     if(APPLE)
-        target_link_libraries(cd PRIVATE ${OPENGL_FRAMEWORK})
+        target_link_libraries(cd PRIVATE ${OPENGL_FRAMEWORK} ${FTGL_LIBRARIES})
     else()
-        target_link_libraries(cd PRIVATE ${OPENGL_LIBRARIES})
+        target_link_libraries(cd PRIVATE ${OPENGL_LIBRARIES} ${FTGL_LIBRARIES})
     endif()
     target_compile_definitions(cd PRIVATE CD_ENABLE_GL CD_FTGL_NEEDS_STUBS)
 endif()
