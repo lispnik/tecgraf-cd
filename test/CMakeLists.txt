@@ -63,6 +63,10 @@ add_executable(cd_basic_test basic_test.c)
 target_link_libraries(cd_basic_test PRIVATE cd)
 add_test(NAME basic_test COMMAND cd_basic_test)
 
+# Simple mock test (standalone, no CD library dependencies)
+add_executable(test_simple_mock tests/test_simple_mock.c)
+add_test(NAME simple_mock_test COMMAND test_simple_mock)
+
 # Platform-specific backend tests (disabled until implemented)
 # if(CD_ENABLE_IM AND IM_FOUND)
 #     add_cd_test(test_im_integration tests/test_im_integration.c)
@@ -85,6 +89,9 @@ if(CD_ENABLE_GL)
     add_cd_test(test_opengl_simple tests/test_opengl_simple.c)
     add_cd_test(test_opengl_graphics tests/test_opengl_graphics.c)
 endif()
+
+# Font access tests
+add_cd_test(test_font_access tests/test_font_access.c)
 
 # Custom targets
 add_custom_target(test_cd

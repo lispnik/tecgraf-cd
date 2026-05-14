@@ -385,6 +385,14 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h"
 )
 
+# Install fonts and data files
+install(DIRECTORY etc/ DESTINATION ${CMAKE_INSTALL_DATADIR}/cd
+    FILES_MATCHING
+    PATTERN "*.ttf"
+    PATTERN "*.txt"
+    PATTERN "*.dgn"
+)
+
 # Install pkg-config file
 configure_file(cd.pc.in cd.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cd.pc

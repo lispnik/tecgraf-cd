@@ -65,6 +65,13 @@ Testing/
 test_results/
 coverage/
 
+# Test executables (built binaries, not source)
+test_*
+simple_test
+run_*_tests
+*_test
+*_demo
+
 # Generated files
 version.h
 config.h
