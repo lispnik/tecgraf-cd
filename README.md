@@ -5,6 +5,47 @@ A platform-independent 2D graphics library implemented for multiple platforms us
 [![Build](https://github.com/lispnik/tecgraf-cd/actions/workflows/build.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/build.yml)
 [![Security](https://github.com/lispnik/tecgraf-cd/actions/workflows/security.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/security.yml)
 
+## About
+
+CD (Canvas Draw) provides a unified interface for 2D graphics across multiple platforms and output formats. The library abstracts the underlying graphics systems, allowing applications to draw vector graphics, render text, and manipulate images using a consistent API regardless of the target platform or output device.
+
+## Fork Differences from Upstream
+
+This fork modernizes the original [Tecgraf CD library](http://www.tecgraf.puc-rio.br/cd) with significant improvements for contemporary development:
+
+### Build System Modernization
+- **CMake build system** - Replaced legacy "tecmake" build system with modern CMake (3.16+)
+- **Dependency management** - Uses pre-built [IM library artifacts](https://github.com/lispnik/tecgraf-im) instead of complex source builds
+- **Cross-platform builds** - Unified build process with comprehensive CI/CD across Linux, macOS, and Windows
+
+### Platform Support Enhancements  
+- **Apple Silicon macOS** - Native support for M1/M2 Macs with proper Homebrew integration
+- **Modern Linux distributions** - Updated dependencies for Ubuntu 24.04+ and contemporary package names
+- **Windows improvements** - Enhanced Visual Studio and vcpkg integration with proper DLL exports
+
+### Development Infrastructure
+- **GitHub Actions CI** - Comprehensive continuous integration with matrix builds across platforms and configurations
+- **Automated testing** - Build verification, platform-specific compilation testing, and integration validation
+- **Dependency optimization** - Streamlined external library management and caching strategies
+
+### Graphics Backend Improvements
+- **Cairo integration** - Enhanced Cairo backend with proper GTK/GDK conditional compilation
+- **OpenGL modernization** - Updated OpenGL support with FTGL text rendering capabilities  
+- **Cross-platform rendering** - Improved platform-specific backend selection and compilation
+- **PDF/Vector output** - Enhanced PostScript, PDF, and SVG generation capabilities
+
+### Compatibility and Reliability
+- **Robust compilation** - Fixed numerous platform-specific compilation issues and header dependencies
+- **Runtime stability** - Improved library loading and cross-platform compatibility
+- **Modern compilers** - Support for contemporary C99/C11 compilers and toolchains
+- **System integration** - Better integration with system package managers and dependency resolution
+
+### Recent Improvements (2024)
+- **Optimized CI/CD pipeline** - Enhanced build timeouts, improved caching, and parallel execution
+- **Cairo compilation fixes** - Resolved platform-specific compilation issues for Linux/macOS
+- **Dependency resolution** - Streamlined FTGL, GTK, and system library dependencies
+- **Cross-platform consistency** - Unified behavior across different operating systems and graphics backends
+
 ## Features
 
 - **Vector Graphics**: Complete 2D vector drawing capabilities
@@ -136,7 +177,7 @@ int main() {
 
 ## Integration with IM
 
-CD seamlessly integrates with the [IM (Image Processing) library](https://github.com/lispnik/tecgraf-im):
+CD seamlessly integrates with the [IM (Image Processing) library](https://github.com/lispnik/tecgraf-im) modernized fork:
 
 ```c
 #include <cd.h>
@@ -159,16 +200,25 @@ cdKillCanvas(canvas);
 imImageDestroy(image);
 ```
 
+Both CD and IM have been modernized with CMake builds, GitHub Actions CI, and enhanced cross-platform support as part of the `lispnik` organization's effort to maintain these essential graphics libraries for contemporary development environments.
+
 ## Documentation
 
-- [API Reference](https://tecgraf.puc-rio.br/cd/)
-- [Programming Guide](html/)
-- [Examples](test/)
+- **Original Documentation**: [Tecgraf CD Documentation](https://tecgraf.puc-rio.br/cd/)
+- **API Reference**: Available in the `html/` directory
+- **Programming Guide**: See `html/` directory for comprehensive guides
+- **Examples**: See `test/` directory for usage examples
+- **Build Instructions**: See build section above and platform-specific notes
 
 ## Original Authors
 
-- **Tecgraf/PUC-Rio** - Computer Graphics Technology Group
+- **Tecgraf/PUC-Rio** - Computer Graphics Technology Group, Pontifical Catholic University of Rio de Janeiro
 - **Website**: http://www.tecgraf.puc-rio.br/cd
+- **Contact**: cd@tecgraf.puc-rio.br
+
+## Fork Maintainer
+
+This modernized fork is maintained as part of the `lispnik` GitHub organization, focusing on contemporary cross-platform support, enhanced CI/CD, and improved integration with modern development workflows.
 
 ## License
 
@@ -177,11 +227,13 @@ See [COPYRIGHT](COPYRIGHT) file for license information.
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Add tests if applicable
 5. Ensure all CI checks pass
 6. Submit a pull request
+
+This fork welcomes contributions that maintain compatibility with the original Tecgraf CD API while enhancing cross-platform support, build system improvements, and modern development practices.
 
 ## Security
 
