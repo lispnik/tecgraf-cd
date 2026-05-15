@@ -65,7 +65,8 @@ jobs:
           libpng-dev \
           libjpeg-dev \
           zlib1g-dev \
-          libexif-dev
+          libexif-dev \
+          libfftw3-dev
 
     - name: Install system dependencies (macOS)
       if: matrix.platform == 'macos'
@@ -81,7 +82,8 @@ jobs:
           libpng \
           jpeg \
           libexif \
-          jasper
+          jasper \
+          fftw
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
