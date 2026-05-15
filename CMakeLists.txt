@@ -108,6 +108,7 @@ include_directories(include)
 include_directories(src)
 include_directories(src/sim)
 include_directories(src/svg)
+include_directories(src/x11)
 
 # Core CD library sources
 set(CD_CORE_SOURCES
