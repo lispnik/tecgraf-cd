@@ -92,65 +92,73 @@ jobs:
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
-      uses: ilammy/msvc-dev-cmd@v1
+      uses: microsoft/setup-msbuild@v1.3
+
+    - name: Download IM artifacts (Linux)
+      if: matrix.platform == 'linux'
+      uses: dawidd6/action-download-artifact@v2
       with:
-        arch: x64
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-linux.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-libs-ubuntu-24.04
+        path: im-git/install/lib
 
-    - name: Install pkg-config (Windows)
-      if: matrix.platform == 'windows'
-      shell: pwsh
-      run: |
-        choco install pkgconfiglite -y --no-progress
-
-    - name: Checkout IM dependency
-      uses: actions/checkout@v4
+    - name: Download IM headers (Linux)
+      if: matrix.platform == 'linux'
+      uses: dawidd6/action-download-artifact@v2
       with:
-        repository: lispnik/tecgraf-im
-        path: im-git
-        ref: master
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-linux.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-headers-ubuntu-24.04
+        path: im-git/install/include
 
-    - name: Build IM dependency (Linux/macOS)
-      if: matrix.platform != 'windows'
-      run: |
-        cd im-git
-        # Use exact same configuration as working IM repository
-        if [ "${{ matrix.platform }}" = "linux" ]; then
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=install \
-            -DIM_BUILD_JP2=OFF
-          cmake --build build -j $(nproc)
-        else
-          # macOS build
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=install \
-            -DIM_BUILD_JP2=ON
-          cmake --build build -j $(sysctl -n hw.ncpu)
-        fi
-        cmake --install build
+    - name: Download IM artifacts (macOS)
+      if: matrix.platform == 'macos'
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-macos.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-libs-macos-15
+        path: im-git/install/lib
 
-    - name: Build IM dependency (Windows)
+    - name: Download IM headers (macOS)
+      if: matrix.platform == 'macos'
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-macos.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-headers-macos-15
+        path: im-git/install/include
+
+    - name: Download IM artifacts (Windows)
       if: matrix.platform == 'windows'
-      shell: pwsh
-      run: |
-        cd im-git
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-windows.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-libs-windows-2022
+        path: im-git/install/lib
 
-        # Install vcpkg dependencies like the working IM repository
-        $vcpkg = Join-Path $env:VCPKG_INSTALLATION_ROOT "vcpkg.exe"
-        & $vcpkg install --triplet x64-windows tiff libjpeg-turbo libpng libexif lz4 jasper fftw3 lua
-
-        # Configure with vcpkg toolchain like working IM repository
-        $toolchain = Join-Path $env:VCPKG_INSTALLATION_ROOT "scripts/buildsystems/vcpkg.cmake"
-        cmake -S . -B build -G Ninja `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_INSTALL_PREFIX=install `
-          -DCMAKE_TOOLCHAIN_FILE="$toolchain" `
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-
-        # Build and install
-        cmake --build build -j
-        cmake --install build
+    - name: Download IM headers (Windows)
+      if: matrix.platform == 'windows'
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-windows.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-headers-windows-2022
+        path: im-git/install/include
 
     - name: Configure CMake (Linux/macOS)
       if: matrix.platform != 'windows'
@@ -186,17 +194,12 @@ jobs:
 
     - name: Configure CMake (Windows)
       if: matrix.platform == 'windows'
-      shell: pwsh
       run: |
         mkdir build
         cd build
-        $toolchain = Join-Path $env:VCPKG_INSTALLATION_ROOT "scripts/buildsystems/vcpkg.cmake"
         cmake .. `
-          -G Ninja `
-          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
           -DCMAKE_INSTALL_PREFIX=../install `
-          -DCMAKE_TOOLCHAIN_FILE="$toolchain" `
-          -DVCPKG_TARGET_TRIPLET=x64-windows `
           -DIM_INCLUDE_DIR=../im-git/install/include `
           -DIM_LIBRARY=../im-git/install/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
@@ -215,7 +218,7 @@ jobs:
       if: matrix.platform == 'windows'
       run: |
         cd build
-        cmake --build . -j
+        cmake --build . --config ${{ matrix.build_type }} --parallel
 
     - name: Run tests (Linux/macOS)
       if: matrix.platform != 'windows'
