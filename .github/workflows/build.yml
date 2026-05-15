@@ -59,6 +59,7 @@ jobs:
           libcairo2-dev \
           libpango1.0-dev \
           libfreetype6-dev \
+          libftgl-dev \
           libgl1-mesa-dev \
           libglu1-mesa-dev \
           liblua5.4-dev \
@@ -82,6 +83,7 @@ jobs:
           cairo \
           pango \
           freetype \
+          ftgl \
           lua \
           libtiff \
           libpng \
