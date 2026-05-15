@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    timeout-minutes: 60
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -31,17 +32,17 @@ jobs:
       with:
         path: |
           ~/.cache/apt
-        key: ${{ runner.os }}-deps-${{ hashFiles('**/apt-packages.txt') }}
+        key: ${{ runner.os }}-deps-v2-${{ hashFiles('.github/workflows/build.yml') }}
 
     - name: Cache dependencies (macOS)
       if: matrix.platform == 'macos'
       uses: actions/cache@v3
       with:
         path: |
-          /usr/local/Cellar
-          /usr/local/lib
-          /usr/local/include
-        key: ${{ runner.os }}-deps-${{ hashFiles('**/brew-packages.txt') }}
+          /opt/homebrew/Cellar
+          /opt/homebrew/lib
+          /opt/homebrew/include
+        key: ${{ runner.os }}-deps-v2-${{ hashFiles('.github/workflows/build.yml') }}
 
     - name: Install system dependencies (Linux)
       if: matrix.platform == 'linux'
