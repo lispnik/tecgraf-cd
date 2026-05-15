@@ -65,7 +65,8 @@ jobs:
           libpng-dev \
           libjpeg-dev \
           zlib1g-dev \
-          libexif-dev
+          libexif-dev \
+          libjasper-dev
 
     - name: Install system dependencies (macOS)
       if: matrix.platform == 'macos'
@@ -80,7 +81,8 @@ jobs:
           libtiff \
           libpng \
           jpeg \
-          libexif
+          libexif \
+          jasper
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
@@ -99,7 +101,10 @@ jobs:
         cd im-git
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX=../install
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_INSTALL_PREFIX=../install \
+          -DIM_BUILD_JP2=ON
         make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
         make install
 
@@ -109,7 +114,10 @@ jobs:
         cd im-git
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX=../install
+        cmake .. `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DCMAKE_INSTALL_PREFIX=../install `
+          -DIM_BUILD_JP2=OFF
         cmake --build . --config ${{ matrix.build_type }} --parallel
         cmake --install . --config ${{ matrix.build_type }}
 
