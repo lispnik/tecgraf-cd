@@ -92,7 +92,15 @@ jobs:
 
     - name: Setup MSVC (Windows)
       if: matrix.platform == 'windows'
-      uses: microsoft/setup-msbuild@v1.3
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Install pkg-config (Windows)
+      if: matrix.platform == 'windows'
+      shell: pwsh
+      run: |
+        choco install pkgconfiglite -y --no-progress
 
     - name: Checkout IM dependency
       uses: actions/checkout@v4
@@ -124,19 +132,25 @@ jobs:
 
     - name: Build IM dependency (Windows)
       if: matrix.platform == 'windows'
+      shell: pwsh
       run: |
         cd im-git
-        mkdir build
-        cd build
-        cmake .. `
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-          -DCMAKE_INSTALL_PREFIX=../install `
-          -DIM_BUILD_JP2=OFF `
-          -DIM_BUILD_PROCESS=OFF `
-          -DIM_BUILD_FFTW=OFF `
-          -DIM_BUILD_LUA=OFF
-        cmake --build . --config ${{ matrix.build_type }} --parallel
-        cmake --install . --config ${{ matrix.build_type }}
+
+        # Install vcpkg dependencies like the working IM repository
+        $vcpkg = Join-Path $env:VCPKG_INSTALLATION_ROOT "vcpkg.exe"
+        & $vcpkg install --triplet x64-windows tiff libjpeg-turbo libpng libexif lz4 jasper fftw3 lua
+
+        # Configure with vcpkg toolchain like working IM repository
+        $toolchain = Join-Path $env:VCPKG_INSTALLATION_ROOT "scripts/buildsystems/vcpkg.cmake"
+        cmake -S . -B build -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_INSTALL_PREFIX=install `
+          -DCMAKE_TOOLCHAIN_FILE="$toolchain" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows
+
+        # Build and install
+        cmake --build build -j
+        cmake --install build
 
     - name: Configure CMake (Linux/macOS)
       if: matrix.platform != 'windows'
@@ -172,12 +186,17 @@ jobs:
 
     - name: Configure CMake (Windows)
       if: matrix.platform == 'windows'
+      shell: pwsh
       run: |
         mkdir build
         cd build
+        $toolchain = Join-Path $env:VCPKG_INSTALLATION_ROOT "scripts/buildsystems/vcpkg.cmake"
         cmake .. `
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_INSTALL_PREFIX=../install `
+          -DCMAKE_TOOLCHAIN_FILE="$toolchain" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows `
           -DIM_INCLUDE_DIR=../im-git/install/include `
           -DIM_LIBRARY=../im-git/install/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
@@ -196,7 +215,7 @@ jobs:
       if: matrix.platform == 'windows'
       run: |
         cd build
-        cmake --build . --config ${{ matrix.build_type }} --parallel
+        cmake --build . -j
 
     - name: Run tests (Linux/macOS)
       if: matrix.platform != 'windows'
