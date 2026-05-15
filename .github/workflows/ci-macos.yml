@@ -104,3 +104,12 @@ jobs:
       with:
         name: cd-macos-${{ matrix.build_type }}
         path: cd-macos-${{ matrix.build_type }}.tar.gz
+
+    - name: Trigger CD bindings CI
+      if: success() && github.ref == 'refs/heads/main' && matrix.build_type == 'Release'
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.DISPATCH_TOKEN }}
+        repository: lispnik/cd
+        event-type: tecgraf-cd-build-complete
+        client-payload: '{"platform": "macos", "workflow": "ci-macos.yml"}'
