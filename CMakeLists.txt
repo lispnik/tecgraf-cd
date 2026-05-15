@@ -165,8 +165,17 @@ elseif(CD_PLATFORM_LINUX)
     endif()
     if(CD_ENABLE_CAIRO AND CAIRO_FOUND)
         file(GLOB CAIRO_SOURCES src/cairo/*.c)
-        # Exclude Windows-specific Cairo files on non-Windows platforms
-        list(REMOVE_ITEM CAIRO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcairoemf.c)
+        # Exclude Windows-specific Cairo files on Linux
+        list(REMOVE_ITEM CAIRO_SOURCES
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcairoemf.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcaironative_win32.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcairoprn_win32.c)
+        # Exclude GDK-dependent Cairo files if GDK is not available
+        if(NOT (CD_ENABLE_GDK AND GDK_FOUND))
+            list(REMOVE_ITEM CAIRO_SOURCES
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcaironative_gdk.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcairoprn_gtk.c)
+        endif()
         list(APPEND CD_DRIVER_SOURCES ${CAIRO_SOURCES})
     endif()
     if(CD_ENABLE_GDK AND GDK_FOUND)
