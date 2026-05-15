@@ -1,0 +1,82 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v1.3
+
+    - name: Download IM artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-windows.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-libs-windows-2022
+        path: im-git/install/lib
+
+    - name: Download IM headers
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-windows.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-headers-windows-2022
+        path: im-git/install/include
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DCMAKE_INSTALL_PREFIX=../install `
+          -DIM_INCLUDE_DIR=../im-git/install/include `
+          -DIM_LIBRARY=../im-git/install/lib/im.lib `
+          -DCD_ENABLE_GDIPLUS=ON `
+          -DCD_ENABLE_DIRECT2D=ON `
+          -DCD_ENABLE_PDF=ON `
+          -DCD_ENABLE_IM=ON `
+          -DCD_ENABLE_LUA=OFF
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config ${{ matrix.build_type }} --parallel
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ matrix.build_type }}
+
+    - name: Install
+      run: |
+        cd build
+        cmake --install . --config ${{ matrix.build_type }}
+
+    - name: Package artifacts
+      run: |
+        tar -czf cd-windows-${{ matrix.build_type }}.tar.gz install/
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cd-windows-${{ matrix.build_type }}
+        path: cd-windows-${{ matrix.build_type }}.tar.gz

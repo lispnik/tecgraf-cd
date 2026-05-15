@@ -1,0 +1,106 @@
+name: macOS CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          /opt/homebrew/Cellar
+          /opt/homebrew/lib
+          /opt/homebrew/include
+        key: ${{ runner.os }}-deps-v2-${{ hashFiles('.github/workflows/ci-macos.yml') }}
+
+    - name: Install system dependencies
+      run: |
+        brew install \
+          cmake \
+          pkg-config \
+          cairo \
+          pango \
+          freetype \
+          ftgl \
+          lua \
+          libtiff \
+          libpng \
+          jpeg \
+          libexif \
+          jasper \
+          fftw
+
+    - name: Download IM artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-macos.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-libs-macos-15
+        path: im-git/install/lib
+
+    - name: Download IM headers
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: ci-macos.yml
+        repo: lispnik/tecgraf-im
+        branch: master
+        name: im-headers-macos-15
+        path: im-git/install/include
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_INSTALL_PREFIX=../install \
+          -DIM_INCLUDE_DIR=../im-git/install/include \
+          -DIM_LIBRARY=../im-git/install/lib/libim.dylib \
+          -DCD_ENABLE_CAIRO=ON \
+          -DCD_ENABLE_GL=ON \
+          -DCD_ENABLE_PDF=ON \
+          -DCD_ENABLE_IM=ON \
+          -DCD_ENABLE_LUA=ON \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+
+    - name: Build
+      run: |
+        cd build
+        make -j$(sysctl -n hw.ncpu)
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure
+
+    - name: Install
+      run: |
+        cd build
+        cmake --install . --config ${{ matrix.build_type }}
+
+    - name: Package artifacts
+      run: |
+        tar -czf cd-macos-${{ matrix.build_type }}.tar.gz install/
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cd-macos-${{ matrix.build_type }}
+        path: cd-macos-${{ matrix.build_type }}.tar.gz
