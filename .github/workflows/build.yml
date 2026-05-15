@@ -102,17 +102,14 @@ jobs:
         cd im-git
         mkdir build
         cd build
-        # Disable JP2 support on Linux due to jasper package availability issues
-        # Enable JP2 on macOS where jasper is available via homebrew
-        if [ "${{ matrix.platform }}" = "linux" ]; then
-          JP2_FLAG="-DIM_BUILD_JP2=OFF"
-        else
-          JP2_FLAG="-DIM_BUILD_JP2=ON"
-        fi
+        # Use minimal IM build with core features only for reliability
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_INSTALL_PREFIX=../install \
-          $JP2_FLAG
+          -DIM_BUILD_JP2=OFF \
+          -DIM_BUILD_PROCESS=OFF \
+          -DIM_BUILD_FFTW=OFF \
+          -DIM_BUILD_LUA=OFF
         make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
         make install
 
@@ -125,7 +122,10 @@ jobs:
         cmake .. `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
           -DCMAKE_INSTALL_PREFIX=../install `
-          -DIM_BUILD_JP2=OFF
+          -DIM_BUILD_JP2=OFF `
+          -DIM_BUILD_PROCESS=OFF `
+          -DIM_BUILD_FFTW=OFF `
+          -DIM_BUILD_LUA=OFF
         cmake --build . --config ${{ matrix.build_type }} --parallel
         cmake --install . --config ${{ matrix.build_type }}
 
