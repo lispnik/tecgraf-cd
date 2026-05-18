@@ -94,6 +94,15 @@ if(APPLE AND NOT FREETYPE_FOUND)
         set(FREETYPE_FOUND TRUE)
         set(FREETYPE_INCLUDE_DIRS ${FREETYPE_INCLUDE_DIR})
         set(FREETYPE_LIBRARIES ${FREETYPE_LIBRARY})
+        message(STATUS "Found FreeType (macOS fallback): ${FREETYPE_LIBRARY}")
+    endif()
+endif()
+
+# On Windows, help find vcpkg-installed FreeType
+if(WIN32 AND NOT FREETYPE_FOUND)
+    find_package(Freetype QUIET)
+    if(FREETYPE_FOUND)
+        message(STATUS "Found FreeType (Windows): ${FREETYPE_LIBRARIES}")
     endif()
 endif()
 
