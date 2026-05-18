@@ -82,11 +82,24 @@ jobs:
     - name: Package artifacts
       run: |
         # Package build outputs directly since install step doesn't create install directory on Windows
-        New-Item -ItemType Directory -Path "artifacts" -Force
-        Copy-Item "build\${{ matrix.build_type }}\cd.dll" "artifacts\" -ErrorAction SilentlyContinue
-        Copy-Item "build\${{ matrix.build_type }}\cd.lib" "artifacts\" -ErrorAction SilentlyContinue
-        Copy-Item "build\${{ matrix.build_type }}\cd.exe" "artifacts\" -ErrorAction SilentlyContinue
-        Copy-Item "include\*" "artifacts\" -Recurse -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path "artifacts\bin" -Force
+        New-Item -ItemType Directory -Path "artifacts\lib" -Force
+        New-Item -ItemType Directory -Path "artifacts\include" -Force
+        New-Item -ItemType Directory -Path "artifacts\fonts" -Force
+
+        # Copy DLLs and executables
+        Copy-Item "build\${{ matrix.build_type }}\*.dll" "artifacts\bin\" -ErrorAction SilentlyContinue
+        Copy-Item "build\${{ matrix.build_type }}\*.exe" "artifacts\bin\" -ErrorAction SilentlyContinue
+
+        # Copy import libraries (.lib files)
+        Copy-Item "build\${{ matrix.build_type }}\*.lib" "artifacts\lib\" -ErrorAction SilentlyContinue
+
+        # Copy header files
+        Copy-Item "include\*" "artifacts\include\" -Recurse -ErrorAction SilentlyContinue
+
+        # Copy font files
+        Copy-Item "etc\*" "artifacts\fonts\" -Recurse -ErrorAction SilentlyContinue
+
         Compress-Archive -Path "artifacts\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
 
     - name: Upload artifacts
