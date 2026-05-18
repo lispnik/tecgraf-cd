@@ -21,6 +21,11 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v1.3
 
+    - name: Install dependencies with vcpkg
+      run: |
+        vcpkg install freetype:x64-windows
+        vcpkg integrate install
+
     - name: Download IM artifacts
       uses: dawidd6/action-download-artifact@v2
       with:
@@ -48,6 +53,7 @@ jobs:
         cmake .. `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
           -DCMAKE_INSTALL_PREFIX=../install `
+          -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
           -DIM_INCLUDE_DIR=../im-git/install/include `
           -DIM_LIBRARY=../im-git/install/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
