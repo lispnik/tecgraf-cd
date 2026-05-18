@@ -81,7 +81,13 @@ jobs:
 
     - name: Package artifacts
       run: |
-        Compress-Archive -Path install/ -DestinationPath cd-windows-${{ matrix.build_type }}.zip
+        dir
+        if (Test-Path "install") {
+          Compress-Archive -Path "install\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
+        } else {
+          Write-Error "Install directory not found"
+          dir
+        }
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
