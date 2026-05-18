@@ -79,7 +79,7 @@ jobs:
           -DIM_LIBRARY=../im-git/install/lib/libim.so \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_GL=ON \
-          -DCD_ENABLE_PDF=ON \
+          -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_IM=ON
         make -j$(nproc)
 

@@ -115,7 +115,7 @@ jobs:
           -DIM_LIBRARY=../im-git/install/lib/libim.so \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_GL=ON \
-          -DCD_ENABLE_PDF=ON \
+          -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_IM=ON \
           -DCD_ENABLE_LUA=ON \
           -DCMAKE_POSITION_INDEPENDENT_CODE=ON
@@ -132,7 +132,7 @@ jobs:
           -DIM_LIBRARY=../im-git/install/lib/libim.dylib \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_GL=ON \
-          -DCD_ENABLE_PDF=ON \
+          -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_IM=ON \
           -DCD_ENABLE_LUA=ON \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
@@ -150,7 +150,7 @@ jobs:
           -DIM_LIBRARY=../im-git/install/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
           -DCD_ENABLE_DIRECT2D=ON `
-          -DCD_ENABLE_PDF=ON `
+          -DCD_ENABLE_PDF=OFF `
           -DCD_ENABLE_IM=ON `
           -DCD_ENABLE_LUA=OFF
 
