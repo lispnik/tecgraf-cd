@@ -113,7 +113,8 @@ static cdluaCallback cdluacgmcb[7] = {
 }
 };
 
-static cdluaContext cdluacgmctx = 
+#ifdef CD_ENABLE_CGM
+static cdluaContext cdluacgmctx =
 {
   0,
   "CGM",
@@ -122,6 +123,7 @@ static cdluaContext cdluacgmctx =
   cdluacgmcb,
   7
 };
+#endif
 
 /***************************************************************************\
 * CGM CD_COUNTERCB.                                                         *
@@ -877,7 +879,9 @@ void cdlua_initdrivers(lua_State * L, cdluaLuaState* cdL)
 #ifdef CD_ENABLE_DGN
   cdlua_addcontext(L, cdL, &cdluadgnctx);
 #endif
+#ifdef CD_ENABLE_CGM
   cdlua_addcontext(L, cdL, &cdluacgmctx);
+#endif
   cdlua_addcontext(L, cdL, &cdluamfctx);
   cdlua_addcontext(L, cdL, &cdluadebugctx);
   cdlua_addcontext(L, cdL, &cdluapicturectx);

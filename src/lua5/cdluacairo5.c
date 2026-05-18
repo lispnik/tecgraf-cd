@@ -17,12 +17,13 @@
 #include "cdlua5_private.h"
 
 
+#ifdef CD_ENABLE_IMAGERGB
 static void *cdimagergb_checkdata(lua_State* L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 
-static cdluaContext cdluaimagergbctx = 
+static cdluaContext cdluaimagergbctx =
 {
   0,
   "CAIRO_IMAGERGB",
@@ -31,6 +32,7 @@ static cdluaContext cdluaimagergbctx =
   NULL,
   0
 };
+#endif
 
 #ifdef CD_ENABLE_PS
 static void *cdps_checkdata( lua_State *L, int param)
@@ -83,12 +85,13 @@ static cdluaContext cdluapdfctx =
 };
 #endif
 
+#ifdef CD_ENABLE_DBUFFER
 static void *cddbuf_checkdata(lua_State * L, int param)
 {
   return cdlua_checkcanvas(L, param);
 }
 
-static cdluaContext cdluadbufctx = 
+static cdluaContext cdluadbufctx =
 {
   0,
   "CAIRO_DBUFFER",
@@ -97,6 +100,7 @@ static cdluaContext cdluadbufctx =
   NULL,
   0
 };
+#endif
 
 #ifdef WIN32
 static void *cdemf_checkdata(lua_State *L, int param)
@@ -157,12 +161,13 @@ static cdluaContext cdluanativewindowctx =
 };
 #endif
 
+#ifdef CD_ENABLE_IMAGE
 static void *cdimage_checkdata(lua_State *L, int param)
 {
   return cdlua_checkimage(L, param);
 }
 
-static cdluaContext cdluaimagectx = 
+static cdluaContext cdluaimagectx =
 {
   0,
   "CAIRO_IMAGE",
@@ -171,6 +176,7 @@ static cdluaContext cdluaimagectx =
   NULL,
   0
 };
+#endif
 
 static const luaL_Reg funcs[] = {
   { NULL, NULL },
@@ -189,9 +195,15 @@ static int cdluacairo_open (lua_State *L)
 #ifdef CD_ENABLE_SVG
   cdlua_addcontext(L, cdL, &cdluasvgctx);
 #endif
+#ifdef CD_ENABLE_IMAGERGB
   cdlua_addcontext(L, cdL, &cdluaimagergbctx);
+#endif
+#ifdef CD_ENABLE_DBUFFER
   cdlua_addcontext(L, cdL, &cdluadbufctx);
+#endif
+#ifdef CD_ENABLE_IMAGE
   cdlua_addcontext(L, cdL, &cdluaimagectx);
+#endif
 #ifdef CD_ENABLE_NATIVEWINDOW
   cdlua_addcontext(L, cdL, &cdluanativewindowctx);
 #endif
