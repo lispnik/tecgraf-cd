@@ -5,7 +5,6 @@ A platform-independent 2D graphics library implemented for multiple platforms us
 [![Linux CI](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-linux.yml)
 [![macOS CI](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-macos.yml)
 [![Windows CI](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/ci-windows.yml)
-[![Security](https://github.com/lispnik/tecgraf-cd/actions/workflows/security.yml/badge.svg)](https://github.com/lispnik/tecgraf-cd/actions/workflows/security.yml)
 
 ## About
 
