@@ -78,6 +78,25 @@ if(PKG_CONFIG_FOUND)
     pkg_check_modules(FREETYPE freetype2)
 endif()
 
+# On macOS, help find Homebrew-installed FreeType
+if(APPLE AND NOT FREETYPE_FOUND)
+    find_path(FREETYPE_INCLUDE_DIR ft2build.h
+        PATHS
+            /opt/homebrew/include/freetype2
+            /usr/local/include/freetype2
+        NO_DEFAULT_PATH)
+    find_library(FREETYPE_LIBRARY freetype
+        PATHS
+            /opt/homebrew/lib
+            /usr/local/lib
+        NO_DEFAULT_PATH)
+    if(FREETYPE_INCLUDE_DIR AND FREETYPE_LIBRARY)
+        set(FREETYPE_FOUND TRUE)
+        set(FREETYPE_INCLUDE_DIRS ${FREETYPE_INCLUDE_DIR})
+        set(FREETYPE_LIBRARIES ${FREETYPE_LIBRARY})
+    endif()
+endif()
+
 # ZLIB (needed for minizip support)
 find_package(ZLIB)
 
