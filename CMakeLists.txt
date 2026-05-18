@@ -409,6 +409,8 @@ endif()
 
 # FreeType
 if(FREETYPE_FOUND)
+    message(STATUS "FreeType include dirs: ${FREETYPE_INCLUDE_DIRS}")
+    message(STATUS "FreeType libraries: ${FREETYPE_LIBRARIES}")
     target_include_directories(cd PRIVATE ${FREETYPE_INCLUDE_DIRS})
     target_link_libraries(cd PRIVATE ${FREETYPE_LIBRARIES})
 endif()
