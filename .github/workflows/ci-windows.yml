@@ -54,6 +54,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
           -DCMAKE_INSTALL_PREFIX=../install `
           -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
+          -DBUILD_SHARED_LIBS=ON `
           -DIM_INCLUDE_DIR=../im-git/install/include `
           -DIM_LIBRARY=../im-git/install/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
@@ -91,14 +92,19 @@ jobs:
         Copy-Item "build\${{ matrix.build_type }}\*.dll" "artifacts\bin\" -ErrorAction SilentlyContinue
         Copy-Item "build\${{ matrix.build_type }}\*.exe" "artifacts\bin\" -ErrorAction SilentlyContinue
 
-        # Copy import libraries (.lib files)
+        # Copy import libraries (.lib files) - check multiple locations
         Copy-Item "build\${{ matrix.build_type }}\*.lib" "artifacts\lib\" -ErrorAction SilentlyContinue
+        Copy-Item "build\*.lib" "artifacts\lib\" -ErrorAction SilentlyContinue
 
         # Copy header files
         Copy-Item "include\*" "artifacts\include\" -Recurse -ErrorAction SilentlyContinue
 
         # Copy font files
         Copy-Item "etc\*" "artifacts\fonts\" -Recurse -ErrorAction SilentlyContinue
+
+        # Debug: List what was copied
+        Write-Host "=== Files copied ==="
+        Get-ChildItem "artifacts" -Recurse | Select-Object Name, FullName
 
         Compress-Archive -Path "artifacts\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
 
