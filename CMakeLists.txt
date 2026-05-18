@@ -373,7 +373,38 @@ target_link_libraries(cd PRIVATE ZLIB::ZLIB)
 
 # Lua bindings
 if(CD_ENABLE_LUA AND LUA_FOUND)
-    file(GLOB CDLUA_SOURCES src/lua5/*.c)
+    # Base Lua source files
+    set(CDLUA_SOURCES
+        src/lua5/cdlua5.c
+        src/lua5/cdlua5_active.c
+        src/lua5/cdlua5_canvas.c
+        src/lua5/cdlua5ctx.c
+        src/lua5/cdluagl5.c
+        src/lua5/cdvoid5.c
+    )
+
+    # Add backend-specific files based on enabled options
+    if(CD_ENABLE_CAIRO)
+        list(APPEND CDLUA_SOURCES src/lua5/cdluacairo5.c)
+    endif()
+
+    if(CD_ENABLE_PDF)
+        list(APPEND CDLUA_SOURCES src/lua5/cdluapdf5.c)
+    endif()
+
+    if(CD_ENABLE_IM)
+        list(APPEND CDLUA_SOURCES src/lua5/cdluaim5.c)
+    endif()
+
+    # Only add Windows-specific backends if enabled and on Windows
+    if(CD_ENABLE_DIRECT2D AND WIN32)
+        list(APPEND CDLUA_SOURCES src/lua5/cdluadirect2d5.c)
+    endif()
+
+    if(CD_ENABLE_GDIPLUS AND WIN32)
+        list(APPEND CDLUA_SOURCES src/lua5/cdluacontextplus5.c)
+    endif()
+
     add_library(cdlua ${CDLUA_SOURCES})
     target_include_directories(cdlua PRIVATE ${LUA_INCLUDE_DIR})
     target_link_libraries(cdlua PRIVATE cd ${LUA_LIBRARIES})
@@ -384,16 +415,49 @@ if(CD_ENABLE_LUA AND LUA_FOUND)
         target_link_libraries(cdlua PRIVATE ${IM_LIBRARY})
 
         # Find and link IM Lua libraries
-        # First try to find them alongside the IM library
-        get_filename_component(IM_LIB_DIR "${IM_LIBRARY}" DIRECTORY)
-        find_library(IMLUA_LIBRARY
-            NAMES imlua
-            HINTS ${IM_LIB_DIR}
-            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib)
-        find_library(IMLUA_PROCESS_LIBRARY
-            NAMES imlua_process
-            HINTS ${IM_LIB_DIR}
-            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib)
+        # Check if libraries were explicitly provided (e.g., by homebrew formula)
+        if(NOT DEFINED IMLUA_LIBRARY)
+            # First try to find them alongside the IM library
+            get_filename_component(IM_LIB_DIR "${IM_LIBRARY}" DIRECTORY)
+
+            # Try multiple approaches to find IM Lua libraries
+            find_library(IMLUA_LIBRARY
+                NAMES imlua libimlua
+                HINTS ${IM_LIB_DIR}
+                PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
+                PATH_SUFFIXES lib)
+
+            # If not found, try explicit homebrew path based on dependency
+            if(NOT IMLUA_LIBRARY)
+                # Check if we can construct the path from HOMEBREW_PREFIX
+                if(DEFINED ENV{HOMEBREW_PREFIX})
+                    set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
+                    find_library(IMLUA_LIBRARY
+                        NAMES imlua libimlua
+                        PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
+                        NO_DEFAULT_PATH)
+                endif()
+            endif()
+        endif()
+
+        if(NOT DEFINED IMLUA_PROCESS_LIBRARY)
+            find_library(IMLUA_PROCESS_LIBRARY
+                NAMES imlua_process libimlua_process
+                HINTS ${IM_LIB_DIR}
+                PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
+                PATH_SUFFIXES lib)
+
+            # If not found, try explicit homebrew path
+            if(NOT IMLUA_PROCESS_LIBRARY)
+                if(DEFINED ENV{HOMEBREW_PREFIX})
+                    set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
+                    find_library(IMLUA_PROCESS_LIBRARY
+                        NAMES imlua_process libimlua_process
+                        PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
+                        NO_DEFAULT_PATH)
+                endif()
+            endif()
+        endif()
 
         if(IMLUA_LIBRARY)
             target_link_libraries(cdlua PRIVATE ${IMLUA_LIBRARY})
