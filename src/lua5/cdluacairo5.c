@@ -32,12 +32,13 @@ static cdluaContext cdluaimagergbctx =
   0
 };
 
+#ifdef CD_ENABLE_PS
 static void *cdps_checkdata( lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 
-static cdluaContext cdluapsctx = 
+static cdluaContext cdluapsctx =
 {
   0,
   "CAIRO_PS",
@@ -46,6 +47,7 @@ static cdluaContext cdluapsctx =
   NULL,
   0
 };
+#endif
 
 #ifdef CD_ENABLE_SVG
 static void *cdsvg_checkdata( lua_State *L, int param)
@@ -64,12 +66,13 @@ static cdluaContext cdluasvgctx =
 };
 #endif
 
+#ifdef CD_ENABLE_PDF
 static void *cdpdf_checkdata(lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 
-static cdluaContext cdluapdfctx = 
+static cdluaContext cdluapdfctx =
 {
   0,
   "CAIRO_PDF",
@@ -78,6 +81,7 @@ static cdluaContext cdluapdfctx =
   NULL,
   0
 };
+#endif
 
 static void *cddbuf_checkdata(lua_State * L, int param)
 {
@@ -111,12 +115,13 @@ static cdluaContext cdluaemfctx =
 };
 #endif
 
+#ifdef CD_ENABLE_PRINTER
 static void *cdprinter_checkdata(lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L,param);
 }
 
-static cdluaContext cdluaprinterctx = 
+static cdluaContext cdluaprinterctx =
 {
   0,
   "CAIRO_PRINTER",
@@ -125,6 +130,7 @@ static cdluaContext cdluaprinterctx =
   NULL,
   0
 };
+#endif
 
 static void *cdnativewindow_checkdata(lua_State *L, int param)
 {
@@ -139,7 +145,8 @@ static void *cdnativewindow_checkdata(lua_State *L, int param)
   return NULL;
 }
 
-static cdluaContext cdluanativewindowctx = 
+#ifdef CD_ENABLE_NATIVEWINDOW
+static cdluaContext cdluanativewindowctx =
 {
   0,
   "CAIRO_NATIVEWINDOW",
@@ -148,6 +155,7 @@ static cdluaContext cdluanativewindowctx =
   NULL,
   0
 };
+#endif
 
 static void *cdimage_checkdata(lua_State *L, int param)
 {
@@ -172,16 +180,24 @@ static int cdluacairo_open (lua_State *L)
 {
   cdluaLuaState* cdL = cdlua_getstate(L);
   cdlua_register_lib(L, funcs);  /* leave cd table at the top of the stack */
+#ifdef CD_ENABLE_PDF
   cdlua_addcontext(L, cdL, &cdluapdfctx);
+#endif
+#ifdef CD_ENABLE_PS
   cdlua_addcontext(L, cdL, &cdluapsctx);
+#endif
 #ifdef CD_ENABLE_SVG
   cdlua_addcontext(L, cdL, &cdluasvgctx);
 #endif
   cdlua_addcontext(L, cdL, &cdluaimagergbctx);
   cdlua_addcontext(L, cdL, &cdluadbufctx);
   cdlua_addcontext(L, cdL, &cdluaimagectx);
+#ifdef CD_ENABLE_NATIVEWINDOW
   cdlua_addcontext(L, cdL, &cdluanativewindowctx);
+#endif
+#ifdef CD_ENABLE_PRINTER
   cdlua_addcontext(L, cdL, &cdluaprinterctx);
+#endif
 #ifdef WIN32
   cdlua_addcontext(L, cdL, &cdluaemfctx);
 #endif
