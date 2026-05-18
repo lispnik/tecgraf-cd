@@ -44,6 +44,10 @@ jobs:
           jasper \
           fftw
 
+        # Set up environment for FreeType detection
+        echo "PKG_CONFIG_PATH=$(brew --prefix freetype)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        echo "FREETYPE_DIR=$(brew --prefix freetype)" >> $GITHUB_ENV
+
     - name: Download IM artifacts
       uses: dawidd6/action-download-artifact@v2
       with:

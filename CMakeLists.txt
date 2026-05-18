@@ -80,21 +80,36 @@ endif()
 
 # On macOS, help find Homebrew-installed FreeType
 if(APPLE AND NOT FREETYPE_FOUND)
-    find_path(FREETYPE_INCLUDE_DIR ft2build.h
-        PATHS
-            /opt/homebrew/include/freetype2
-            /usr/local/include/freetype2
-        NO_DEFAULT_PATH)
-    find_library(FREETYPE_LIBRARY freetype
-        PATHS
-            /opt/homebrew/lib
-            /usr/local/lib
-        NO_DEFAULT_PATH)
+    # Try using environment variable from CI
+    if(DEFINED ENV{FREETYPE_DIR})
+        set(FREETYPE_ROOT_DIR $ENV{FREETYPE_DIR})
+        find_path(FREETYPE_INCLUDE_DIR ft2build.h
+            PATHS ${FREETYPE_ROOT_DIR}/include/freetype2
+            NO_DEFAULT_PATH)
+        find_library(FREETYPE_LIBRARY freetype
+            PATHS ${FREETYPE_ROOT_DIR}/lib
+            NO_DEFAULT_PATH)
+    else()
+        # Fallback to standard Homebrew paths
+        find_path(FREETYPE_INCLUDE_DIR ft2build.h
+            PATHS
+                /opt/homebrew/include/freetype2
+                /usr/local/include/freetype2
+            NO_DEFAULT_PATH)
+        find_library(FREETYPE_LIBRARY freetype
+            PATHS
+                /opt/homebrew/lib
+                /usr/local/lib
+            NO_DEFAULT_PATH)
+    endif()
+
     if(FREETYPE_INCLUDE_DIR AND FREETYPE_LIBRARY)
         set(FREETYPE_FOUND TRUE)
         set(FREETYPE_INCLUDE_DIRS ${FREETYPE_INCLUDE_DIR})
         set(FREETYPE_LIBRARIES ${FREETYPE_LIBRARY})
         message(STATUS "Found FreeType (macOS fallback): ${FREETYPE_LIBRARY}")
+    else()
+        message(WARNING "FreeType not found on macOS. Include dir: ${FREETYPE_INCLUDE_DIR}, Library: ${FREETYPE_LIBRARY}")
     endif()
 endif()
 
