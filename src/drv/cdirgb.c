@@ -13,8 +13,10 @@
 
 #include "cd.h"
 #include "cd_private.h"
+#ifdef CD_ENABLE_SIM
 #include "cd_truetype.h"
 #include "sim.h"
+#endif
 #include "cdirgb.h"
 
 
