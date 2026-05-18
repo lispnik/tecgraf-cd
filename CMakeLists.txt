@@ -79,7 +79,7 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 # ZLIB (needed for minizip support)
-find_package(ZLIB REQUIRED)
+find_package(ZLIB)
 
 # IM integration - look for our fork first
 if(CD_ENABLE_IM)
@@ -383,7 +383,9 @@ if(UNIX)
 endif()
 
 # ZLIB library (for minizip support)
-target_link_libraries(cd PRIVATE ZLIB::ZLIB)
+if(ZLIB_FOUND)
+    target_link_libraries(cd PRIVATE ZLIB::ZLIB)
+endif()
 
 # Lua bindings
 if(CD_ENABLE_LUA AND LUA_FOUND)

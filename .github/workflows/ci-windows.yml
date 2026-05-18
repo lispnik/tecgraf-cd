@@ -53,7 +53,7 @@ jobs:
           -DCD_ENABLE_GDIPLUS=ON `
           -DCD_ENABLE_DIRECT2D=ON `
           -DCD_ENABLE_PDF=OFF `
-          -DCD_ENABLE_IM=ON `
+          -DCD_ENABLE_IM=OFF `
           -DCD_ENABLE_LUA=OFF
 
     - name: Build
