@@ -189,11 +189,7 @@ set(CD_DRIVER_SOURCES
 
 # Platform-specific sources
 if(CD_PLATFORM_WINDOWS)
-    list(APPEND CD_DRIVER_SOURCES
-        src/drv/cd0wmf.c
-        src/drv/cd0emf.c
-        src/drv/cd0prn.c
-    )
+    # Note: Windows driver implementations are in src/win32/, not the cd0*.c stub files
     if(CD_ENABLE_GDIPLUS)
         file(GLOB GDIPLUS_SOURCES src/gdiplus/*.cpp)
         list(APPEND CD_DRIVER_SOURCES ${GDIPLUS_SOURCES})
