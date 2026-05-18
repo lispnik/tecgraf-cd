@@ -81,11 +81,11 @@ jobs:
 
     - name: Package artifacts
       run: |
-        tar -czf cd-windows-${{ matrix.build_type }}.tar.gz install/
+        Compress-Archive -Path install/ -DestinationPath cd-windows-${{ matrix.build_type }}.zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: cd-windows-${{ matrix.build_type }}
-        path: cd-windows-${{ matrix.build_type }}.tar.gz
+        path: cd-windows-${{ matrix.build_type }}.zip
 
