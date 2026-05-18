@@ -75,6 +75,9 @@ if(PKG_CONFIG_FOUND)
     pkg_check_modules(FREETYPE freetype2)
 endif()
 
+# ZLIB (needed for minizip support)
+find_package(ZLIB REQUIRED)
+
 # IM integration - look for our fork first
 if(CD_ENABLE_IM)
     # Try to find our IM fork
@@ -365,12 +368,48 @@ if(UNIX)
     target_link_libraries(cd PRIVATE m)
 endif()
 
+# ZLIB library (for minizip support)
+target_link_libraries(cd PRIVATE ZLIB::ZLIB)
+
 # Lua bindings
 if(CD_ENABLE_LUA AND LUA_FOUND)
     file(GLOB CDLUA_SOURCES src/lua5/*.c)
     add_library(cdlua ${CDLUA_SOURCES})
     target_include_directories(cdlua PRIVATE ${LUA_INCLUDE_DIR})
     target_link_libraries(cdlua PRIVATE cd ${LUA_LIBRARIES})
+
+    # Link IM Lua libraries when IM integration is enabled
+    if(CD_ENABLE_IM AND IM_FOUND)
+        target_include_directories(cdlua PRIVATE ${IM_INCLUDE_DIR})
+        target_link_libraries(cdlua PRIVATE ${IM_LIBRARY})
+
+        # Find and link IM Lua libraries
+        # First try to find them alongside the IM library
+        get_filename_component(IM_LIB_DIR "${IM_LIBRARY}" DIRECTORY)
+        find_library(IMLUA_LIBRARY
+            NAMES imlua
+            HINTS ${IM_LIB_DIR}
+            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib)
+        find_library(IMLUA_PROCESS_LIBRARY
+            NAMES imlua_process
+            HINTS ${IM_LIB_DIR}
+            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib)
+
+        if(IMLUA_LIBRARY)
+            target_link_libraries(cdlua PRIVATE ${IMLUA_LIBRARY})
+            message(STATUS "Found IM Lua library: ${IMLUA_LIBRARY}")
+        else()
+            message(WARNING "IM Lua library not found, CD Lua IM integration may not work")
+        endif()
+
+        if(IMLUA_PROCESS_LIBRARY)
+            target_link_libraries(cdlua PRIVATE ${IMLUA_PROCESS_LIBRARY})
+            message(STATUS "Found IM Lua Process library: ${IMLUA_PROCESS_LIBRARY}")
+        else()
+            message(WARNING "IM Lua Process library not found")
+        endif()
+    endif()
+
     set_target_properties(cdlua PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR}
