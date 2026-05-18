@@ -81,19 +81,13 @@ jobs:
 
     - name: Package artifacts
       run: |
-        Write-Host "=== Root directory ==="
-        dir
-        Write-Host "`n=== Build directory ==="
-        dir build
-        if (Test-Path "install") {
-          Write-Host "Found install in root"
-          Compress-Archive -Path "install\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
-        } elseif (Test-Path "build\install") {
-          Write-Host "Found install in build directory"
-          Compress-Archive -Path "build\install\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
-        } else {
-          Write-Error "Install directory not found anywhere"
-        }
+        # Package build outputs directly since install step doesn't create install directory on Windows
+        New-Item -ItemType Directory -Path "artifacts" -Force
+        Copy-Item "build\${{ matrix.build_type }}\cd.dll" "artifacts\" -ErrorAction SilentlyContinue
+        Copy-Item "build\${{ matrix.build_type }}\cd.lib" "artifacts\" -ErrorAction SilentlyContinue
+        Copy-Item "build\${{ matrix.build_type }}\cd.exe" "artifacts\" -ErrorAction SilentlyContinue
+        Copy-Item "include\*" "artifacts\" -Recurse -ErrorAction SilentlyContinue
+        Compress-Archive -Path "artifacts\*" -DestinationPath cd-windows-${{ matrix.build_type }}.zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
