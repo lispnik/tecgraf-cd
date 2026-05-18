@@ -47,12 +47,13 @@ static cdluaContext cdluapsctx =
   0
 };
 
+#ifdef CD_ENABLE_SVG
 static void *cdsvg_checkdata( lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 
-static cdluaContext cdluasvgctx = 
+static cdluaContext cdluasvgctx =
 {
   0,
   "CAIRO_SVG",
@@ -61,6 +62,7 @@ static cdluaContext cdluasvgctx =
   NULL,
   0
 };
+#endif
 
 static void *cdpdf_checkdata(lua_State *L, int param)
 {
@@ -172,7 +174,9 @@ static int cdluacairo_open (lua_State *L)
   cdlua_register_lib(L, funcs);  /* leave cd table at the top of the stack */
   cdlua_addcontext(L, cdL, &cdluapdfctx);
   cdlua_addcontext(L, cdL, &cdluapsctx);
+#ifdef CD_ENABLE_SVG
   cdlua_addcontext(L, cdL, &cdluasvgctx);
+#endif
   cdlua_addcontext(L, cdL, &cdluaimagergbctx);
   cdlua_addcontext(L, cdL, &cdluadbufctx);
   cdlua_addcontext(L, cdL, &cdluaimagectx);

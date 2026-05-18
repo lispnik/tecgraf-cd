@@ -512,28 +512,31 @@ static cdluaContext cdluaimagergbctx =
 /***************************************************************************\
 * CD_DXF.                                                                   *
 \***************************************************************************/
+#ifdef CD_ENABLE_DXF
 static void *cddxf_checkdata(lua_State * L, int param)
 {
   return (void *)luaL_checkstring(L,param);
 }
 
-static cdluaContext cdluadxfctx = 
+static cdluaContext cdluadxfctx =
 {
   0,
   "DXF",
   cdContextDXF,
   cddxf_checkdata
 };
+#endif
 
 /***************************************************************************\
 * CD_DGN.                                                                   *
 \***************************************************************************/
+#ifdef CD_ENABLE_DGN
 static void *cddgn_checkdata(lua_State * L, int param)
 {
   return  (void *)luaL_checkstring(L,param);
 }
 
-static cdluaContext cdluadgnctx = 
+static cdluaContext cdluadgnctx =
 {
   0,
   "DGN",
@@ -542,6 +545,7 @@ static cdluaContext cdluadgnctx =
   NULL,
   0
 };
+#endif
 
 /***************************************************************************\
 * CD_WMF.                                                                   *
@@ -585,12 +589,14 @@ static int wmf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h)
 /***************************************************************************\
 * CD_EMF.                                                                   *
 \***************************************************************************/
+#ifdef CD_ENABLE_EMF
 static void *cdemf_checkdata(lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L,param);
 }
 
 static int emf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h);
+#endif
 
 static cdluaCallback cdluaemfcb[1] = 
 {{
@@ -599,7 +605,8 @@ static cdluaCallback cdluaemfcb[1] =
   (cdCallback)emf_sizecb
 }};
 
-static cdluaContext cdluaemfctx = 
+#ifdef CD_ENABLE_EMF
+static cdluaContext cdluaemfctx =
 {
   0,
   "EMF",
@@ -608,6 +615,7 @@ static cdluaContext cdluaemfctx =
   cdluaemfcb,
   1
 };
+#endif
 
 /***************************************************************************\
 * EMF CD_SIZECB.                                                            *
@@ -855,8 +863,12 @@ void cdlua_initdrivers(lua_State * L, cdluaLuaState* cdL)
 {
   cdlua_addcontext(L, cdL, &cdluaimagectx);
   cdlua_addcontext(L, cdL, &cdluaimagergbctx);
+#ifdef CD_ENABLE_DXF
   cdlua_addcontext(L, cdL, &cdluadxfctx);
+#endif
+#ifdef CD_ENABLE_DGN
   cdlua_addcontext(L, cdL, &cdluadgnctx);
+#endif
   cdlua_addcontext(L, cdL, &cdluacgmctx);
   cdlua_addcontext(L, cdL, &cdluamfctx);
   cdlua_addcontext(L, cdL, &cdluadebugctx);
@@ -876,7 +888,9 @@ void cdlua_initdrivers(lua_State * L, cdluaLuaState* cdL)
 #ifdef CD_ENABLE_WMF
   cdlua_addcontext(L, cdL, &cdluawmfctx);
 #endif
+#ifdef CD_ENABLE_EMF
   cdlua_addcontext(L, cdL, &cdluaemfctx);
+#endif
   cdlua_addcontext(L, cdL, &cdluadbufctx);
   cdlua_addcontext(L, cdL, &cdluadbufrgbctx);
 }
