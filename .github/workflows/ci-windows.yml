@@ -54,6 +54,7 @@ jobs:
           -DCD_ENABLE_DIRECT2D=ON `
           -DCD_ENABLE_GL=OFF `
           -DCD_ENABLE_PDF=OFF `
+          -DCD_ENABLE_SIM=OFF `
           -DCD_ENABLE_IM=OFF `
           -DCD_ENABLE_LUA=OFF
 
