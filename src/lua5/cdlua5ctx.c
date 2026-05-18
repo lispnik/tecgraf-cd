@@ -546,7 +546,7 @@ static cdluaContext cdluadgnctx =
 /***************************************************************************\
 * CD_WMF.                                                                   *
 \***************************************************************************/
-#ifdef CD_WMF
+#ifdef CD_ENABLE_WMF
 static void *cdwmf_checkdata(lua_State * L, int param)
 {
   return  (void *)luaL_checkstring(L,param);
@@ -562,7 +562,7 @@ static cdluaCallback cdluawmfcb[1] =
   (cdCallback)wmf_sizecb
 }};
 
-#ifdef CD_WMF
+#ifdef CD_ENABLE_WMF
 static cdluaContext cdluawmfctx =
 {
   0,
@@ -705,14 +705,14 @@ static int metafile_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double m
 /***************************************************************************\
 * CD_PS.                                                                    *
 \***************************************************************************/
-#ifdef CD_PS
+#ifdef CD_ENABLE_PS
 static void *cdps_checkdata( lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 #endif
 
-#ifdef CD_PS
+#ifdef CD_ENABLE_PS
 static cdluaContext cdluapsctx =
 {
   0,
@@ -745,14 +745,14 @@ static cdluaContext cdluasvgctx =
 /***************************************************************************\
 * CD_PPTX.                                                                    *
 \***************************************************************************/
-#ifdef CD_PPTX
+#ifdef CD_ENABLE_PPTX
 static void *cdpptx_checkdata(lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L, param);
 }
 #endif
 
-#ifdef CD_PPTX
+#ifdef CD_ENABLE_PPTX
 static cdluaContext cdluapptxctx =
 {
   0,
@@ -767,14 +767,14 @@ static cdluaContext cdluapptxctx =
 /***************************************************************************\
 * CD_PRINTER.                                                               *
 \***************************************************************************/
-#ifdef CD_PRINTER
+#ifdef CD_ENABLE_PRINTER
 static void *cdprinter_checkdata(lua_State *L, int param)
 {
   return (void *)luaL_checkstring(L,param);
 }
 #endif
 
-#ifdef CD_PRINTER
+#ifdef CD_ENABLE_PRINTER
 static cdluaContext cdluaprinterctx =
 {
   0,
@@ -864,16 +864,16 @@ void cdlua_initdrivers(lua_State * L, cdluaLuaState* cdL)
   cdlua_addcontext(L, cdL, &cdluasvgctx);
   cdlua_addcontext(L, cdL, &cdluaclipboardctx);
   cdlua_addcontext(L, cdL, &cdluanativewindowctx);
-#ifdef CD_PS
+#ifdef CD_ENABLE_PS
   cdlua_addcontext(L, cdL, &cdluapsctx);
 #endif
-#ifdef CD_PPTX
+#ifdef CD_ENABLE_PPTX
   cdlua_addcontext(L, cdL, &cdluapptxctx);
 #endif
-#ifdef CD_PRINTER
+#ifdef CD_ENABLE_PRINTER
   cdlua_addcontext(L, cdL, &cdluaprinterctx);
 #endif
-#ifdef CD_WMF
+#ifdef CD_ENABLE_WMF
   cdlua_addcontext(L, cdL, &cdluawmfctx);
 #endif
   cdlua_addcontext(L, cdL, &cdluaemfctx);
