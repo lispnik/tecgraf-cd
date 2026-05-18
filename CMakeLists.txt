@@ -237,12 +237,8 @@ elseif(CD_PLATFORM_LINUX)
         list(APPEND CD_DRIVER_SOURCES ${GDK_SOURCES})
     endif()
 elseif(CD_PLATFORM_MACOS)
-    # Use X11 on macOS for now (could add native Cocoa backend later)
-    find_package(X11)
-    if(X11_FOUND)
-        file(GLOB X11_SOURCES src/x11/*.c)
-        list(APPEND CD_DRIVER_SOURCES ${X11_SOURCES})
-    endif()
+    # Use native macOS frameworks instead of X11
+    # X11 is disabled on macOS to use CoreGraphics/CoreText natively
 elseif(CD_PLATFORM_HAIKU)
     # Haiku platform support
     if(CD_ENABLE_HAIKU)
@@ -353,11 +349,7 @@ elseif(CD_PLATFORM_LINUX)
         target_compile_definitions(cd PRIVATE CD_ENABLE_XRENDER)
     endif()
 elseif(CD_PLATFORM_MACOS)
-    if(X11_FOUND)
-        target_include_directories(cd PRIVATE ${X11_INCLUDE_DIR})
-        target_link_libraries(cd PRIVATE ${X11_LIBRARIES})
-        target_compile_definitions(cd PRIVATE CD_X11)
-    endif()
+    # Use native macOS frameworks only
     target_link_libraries(cd PRIVATE "-framework CoreGraphics" "-framework CoreText")
 elseif(CD_PLATFORM_HAIKU)
     # Haiku-specific libraries
