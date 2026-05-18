@@ -364,7 +364,9 @@ static void irgbHatchLine(cdCanvas* canvas, int xmin, int xmax, int y, unsigned 
     xmax = (canvas->w-1);
 
   n = (unsigned char)(xmin&7);
+#ifdef CD_ENABLE_SIM
   simRotateHatchN(hatch, n);
+#endif
 
   for (x = xmin; x <= xmax; x++)
   {
@@ -467,6 +469,7 @@ static void irgPostProcessIntersect(unsigned char* clip, int size)
   }                                                        \
 }
 
+#ifdef CD_ENABLE_SIM
 static void irgbClipTextBitmap(FT_Bitmap* bitmap, int x, int y, int w, unsigned char* clip, int combine_mode)
 {
   unsigned char *bitmap_data;
@@ -493,7 +496,9 @@ static void irgbClipTextBitmap(FT_Bitmap* bitmap, int x, int y, int w, unsigned 
     bitmap_data -= width;
   }
 }
+#endif
 
+#ifdef CD_ENABLE_SIM
 static void irgbClipText(cdCtxCanvas *ctxcanvas, int x, int y, const char *s, int len)
 {
   cdCanvas* canvas = ctxcanvas->canvas;
@@ -550,6 +555,7 @@ static void irgbClipText(cdCtxCanvas *ctxcanvas, int x, int y, const char *s, in
   if (canvas->combine_mode == CD_INTERSECT)
     irgPostProcessIntersect(ctxcanvas->clip_region, ctxcanvas->canvas->w * ctxcanvas->canvas->h);
 }
+#endif
 
 static void irgbClipFillLine(unsigned char* clip_line, int combine_mode, int x1, int x2, int width)
 {
@@ -562,6 +568,7 @@ static void irgbClipFillLine(unsigned char* clip_line, int combine_mode, int x1,
   }
 }
 
+#ifdef CD_ENABLE_SIM
 static void irgbClipPoly(cdCtxCanvas* ctxcanvas, unsigned char* clip_region, cdPoint* poly, int n, int combine_mode) 
 {
   /***********IMPORTANT: the reference for this function is simPolyFill in "sim_linepolyfill.c",
@@ -636,6 +643,7 @@ static void irgbClipPoly(cdCtxCanvas* ctxcanvas, unsigned char* clip_region, cdP
   if (combine_mode == CD_INTERSECT)
     irgPostProcessIntersect(ctxcanvas->clip_region, ctxcanvas->canvas->w * ctxcanvas->canvas->h);
 }
+#endif
 
 static void irgbClipBox(cdCtxCanvas *ctxcanvas, int xmin, int xmax, int ymin, int ymax)
 {
@@ -650,7 +658,9 @@ static void irgbClipBox(cdCtxCanvas *ctxcanvas, int xmin, int xmax, int ymin, in
     poly[1].x = xmin; poly[1].y = ymax;
     poly[2].x = xmax; poly[2].y = ymax;
     poly[3].x = xmax; poly[3].y = ymin;
+#ifdef CD_ENABLE_SIM
     irgbClipPoly(ctxcanvas, ctxcanvas->clip_region, poly, 4, ctxcanvas->canvas->combine_mode);
+#endif
     return;
   }
 
@@ -686,7 +696,9 @@ static void irgbClipArea(cdCtxCanvas* ctxcanvas, int xmin, int xmax, int ymin, i
     poly[2].x = xmax; poly[2].y = ymax;
     poly[3].x = xmax; poly[3].y = ymin;
     memset(ctxcanvas->clip, 0, ctxcanvas->canvas->w * ctxcanvas->canvas->h);
+#ifdef CD_ENABLE_SIM
     irgbClipPoly(ctxcanvas, ctxcanvas->clip, poly, 4, CD_UNION);
+#endif
     return;
   }
 
@@ -737,7 +749,9 @@ static int cdclip(cdCtxCanvas* ctxcanvas, int mode)
     break;
   case CD_CLIPPOLYGON:
     memset(ctxcanvas->clip, 0, ctxcanvas->canvas->w * ctxcanvas->canvas->h);
+#ifdef CD_ENABLE_SIM
     irgbClipPoly(ctxcanvas, ctxcanvas->clip, ctxcanvas->canvas->clip_poly, ctxcanvas->canvas->clip_poly_n, CD_UNION);
+#endif
     break;
   case CD_CLIPREGION:
     if (ctxcanvas->clip_region)
@@ -875,6 +889,7 @@ static void cdfbox(cdCtxCanvas *ctxcanvas, double xmin, double xmax, double ymin
 
 static void cdtext(cdCtxCanvas *ctxcanvas, int x, int y, const char *s, int len)
 {
+#ifdef CD_ENABLE_SIM
   if (ctxcanvas->canvas->new_region)
   {
     /* matrix transformation is done inside irgbClip* if necessary */
@@ -883,6 +898,7 @@ static void cdtext(cdCtxCanvas *ctxcanvas, int x, int y, const char *s, int len)
   }
 
   cdSimulationText(ctxcanvas, x, y, s, len);
+#endif
 }
 
 static void cdpoly(cdCtxCanvas* ctxcanvas, int mode, cdPoint* poly, int n)
@@ -890,7 +906,9 @@ static void cdpoly(cdCtxCanvas* ctxcanvas, int mode, cdPoint* poly, int n)
   if (ctxcanvas->canvas->new_region)
   {
     /* matrix transformation is done inside irgbClip* if necessary */
+#ifdef CD_ENABLE_SIM
     irgbClipPoly(ctxcanvas, ctxcanvas->clip_region, poly, n, ctxcanvas->canvas->combine_mode);
+#endif
     return;
   }
 
@@ -902,10 +920,16 @@ static void cdpoly(cdCtxCanvas* ctxcanvas, int mode, cdPoint* poly, int n)
     memset(ctxcanvas->clip, 1, ctxcanvas->canvas->w * ctxcanvas->canvas->h);  
 
     /* matrix transformation is done inside irgbClip* if necessary */
+#ifdef CD_ENABLE_SIM
     irgbClipPoly(ctxcanvas, ctxcanvas->clip, poly, n, CD_UNION);
+#endif
   }
   else
+  {
+#ifdef CD_ENABLE_SIM
     cdSimulationPoly(ctxcanvas, mode, poly, n);
+#endif
+  }
 }
 
 static void cdgetimagergb(cdCtxCanvas* ctxcanvas, unsigned char *r, unsigned char *g, unsigned char *b, int x, int y, int w, int h)
@@ -1636,6 +1660,7 @@ static cdAttribute alpha_attrib =
   get_alpha_attrib
 }; 
 
+#ifdef CD_ENABLE_SIM
 static void set_aa_attrib(cdCtxCanvas* ctxcanvas, char* data)
 {
   if (!data || data[0] == '0')
@@ -1651,14 +1676,18 @@ static char* get_aa_attrib(cdCtxCanvas* ctxcanvas)
   else
     return "1";
 }
+#endif
 
+#ifdef CD_ENABLE_SIM
 static cdAttribute aa_attrib =
 {
   "ANTIALIAS",
   set_aa_attrib,
   get_aa_attrib
-}; 
+};
+#endif 
 
+#ifdef CD_ENABLE_SIM
 static void set_txtaa_attrib(cdCtxCanvas* ctxcanvas, char* data)
 {
   if (!data || data[0] == '0')
@@ -1680,7 +1709,8 @@ static cdAttribute txtaa_attrib =
   "TEXTANTIALIAS",
   set_txtaa_attrib,
   get_txtaa_attrib
-}; 
+};
+#endif 
 
 static void set_rotate_attrib(cdCtxCanvas* ctxcanvas, char* data)
 {
@@ -1862,24 +1892,29 @@ static void cdcreatecanvas(cdCanvas* canvas, void *data)
   canvas->ctxcanvas = ctxcanvas;
   ctxcanvas->canvas = canvas;
 
-  cdSimulationInitText(canvas->simulation); 
+#ifdef CD_ENABLE_SIM
+  cdSimulationInitText(canvas->simulation);
   /* nao preciso inicializar a fonte,
      pois isso sera' feito na inicializacao dos atributos default do driver */
 
   canvas->simulation->antialias = 1;
   canvas->simulation->txt_antialias = 1;
+#endif
 
   cdRegisterAttribute(canvas, &red_attrib);
   cdRegisterAttribute(canvas, &green_attrib);
   cdRegisterAttribute(canvas, &blue_attrib);
   cdRegisterAttribute(canvas, &alpha_attrib);
+#ifdef CD_ENABLE_SIM
   cdRegisterAttribute(canvas, &aa_attrib);
   cdRegisterAttribute(canvas, &txtaa_attrib);
+#endif
   cdRegisterAttribute(canvas, &rotate_attrib);
   cdRegisterAttribute(canvas, &killdbuffer_attrib);
   cdRegisterAttribute(canvas, &res_attrib);
 }
 
+#ifdef CD_ENABLE_SIM
 static void cdinittable(cdCanvas* canvas)
 {
   cdSimulation* sim;
@@ -1933,10 +1968,58 @@ static void cdinittable(cdCanvas* canvas)
   sim = canvas->simulation;
 
   sim->SolidLine   = irgbSolidLine;
-  sim->PatternLine = irgbPatternLine; 
-  sim->StippleLine = irgbStippleLine; 
-  sim->HatchLine   = irgbHatchLine;   
+  sim->PatternLine = irgbPatternLine;
+  sim->StippleLine = irgbStippleLine;
+  sim->HatchLine   = irgbHatchLine;
 }
+#else
+static void cdinittable(cdCanvas* canvas)
+{
+  /* initialize function table*/
+  canvas->cxClip = cdclip;
+  canvas->cxClipArea = cdcliparea;
+  canvas->cxNewRegion = cdnewregion;
+  canvas->cxIsPointInRegion = cdispointinregion;
+  canvas->cxOffsetRegion = cdoffsetregion;
+  canvas->cxGetRegionBox = cdgetregionbox;
+
+  canvas->cxPutImageRectRGB = cdputimagerectrgb;
+  canvas->cxPutImageRectRGBA = cdputimagerectrgba;
+  canvas->cxPutImageRectMap = cdputimagerectmap;
+  canvas->cxGetImageRGB = cdgetimagergb;
+
+  canvas->cxCreateImage = cdcreateimage;
+  canvas->cxGetImage = cdgetimage;
+  canvas->cxPutImageRect = cdputimagerect;
+  canvas->cxKillImage = cdkillimage;
+  canvas->cxScrollArea = cdscrollarea;
+
+  canvas->cxClear = cdclear;
+  canvas->cxPixel = cdpixel;
+  canvas->cxBox = cdbox;
+  canvas->cxPoly = cdpoly;
+  canvas->cxText = cdtext;
+  canvas->cxFBox = cdfbox;
+
+  /* SIM-dependent functions not available */
+  canvas->cxLine = NULL;
+  canvas->cxRect = NULL;
+  canvas->cxArc = NULL;
+  canvas->cxSector = NULL;
+  canvas->cxChord = NULL;
+  canvas->cxFLine = NULL;
+  canvas->cxFRect = NULL;
+  canvas->cxFArc = NULL;
+  canvas->cxFSector = NULL;
+  canvas->cxFChord = NULL;
+  canvas->cxFPoly = NULL;
+  canvas->cxFont = NULL;
+  canvas->cxGetFontDim = NULL;
+  canvas->cxGetTextSize = NULL;
+
+  canvas->cxKillCanvas = cdkillcanvas;
+}
+#endif
 
 static cdContext cdImageRGBContext =
 {
