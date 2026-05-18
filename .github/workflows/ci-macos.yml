@@ -12,6 +12,11 @@ jobs:
     strategy:
       matrix:
         build_type: [Release, Debug]
+        arch_config: [
+          {name: "universal", cmake_arch: "arm64;x86_64", suffix: "universal"},
+          {name: "arm64", cmake_arch: "arm64", suffix: "arm64"},
+          {name: "x86_64", cmake_arch: "x86_64", suffix: "x86_64"}
+        ]
 
     runs-on: macos-latest
 
@@ -83,7 +88,8 @@ jobs:
           -DCD_ENABLE_SIM=ON \
           -DCD_ENABLE_IM=OFF \
           -DCD_ENABLE_LUA=ON \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+          -DCMAKE_OSX_ARCHITECTURES="${{ matrix.arch_config.cmake_arch }}"
 
     - name: Build
       run: |
@@ -102,11 +108,11 @@ jobs:
 
     - name: Package artifacts
       run: |
-        tar -czf cd-macos-${{ matrix.build_type }}.tar.gz install/
+        tar -czf cd-macos-${{ matrix.build_type }}-${{ matrix.arch_config.suffix }}.tar.gz install/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: cd-macos-${{ matrix.build_type }}
-        path: cd-macos-${{ matrix.build_type }}.tar.gz
+        name: cd-macos-${{ matrix.build_type }}-${{ matrix.arch_config.suffix }}
+        path: cd-macos-${{ matrix.build_type }}-${{ matrix.arch_config.suffix }}.tar.gz
 
