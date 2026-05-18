@@ -557,14 +557,16 @@ static void *cdwmf_checkdata(lua_State * L, int param)
 }
 #endif
 
+#ifdef CD_ENABLE_WMF
 static int wmf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h);
 
-static cdluaCallback cdluawmfcb[1] = 
+static cdluaCallback cdluawmfcb[1] =
 {{
   -1,
   "SIZECB",
   (cdCallback)wmf_sizecb
 }};
+#endif
 
 #ifdef CD_ENABLE_WMF
 static cdluaContext cdluawmfctx =
@@ -578,6 +580,7 @@ static cdluaContext cdluawmfctx =
 };
 #endif
 
+#ifdef CD_ENABLE_WMF
 /***************************************************************************\
 * WMF CD_SIZECB.                                                            *
 \***************************************************************************/
@@ -585,6 +588,7 @@ static int wmf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h)
 {
   return cdlua5_sizecb(canvas, w, h, mm_w, mm_h, cdluawmfcb[CD_SIZECB].lock);
 }
+#endif
 
 /***************************************************************************\
 * CD_EMF.                                                                   *
@@ -598,12 +602,14 @@ static void *cdemf_checkdata(lua_State *L, int param)
 static int emf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h);
 #endif
 
-static cdluaCallback cdluaemfcb[1] = 
+#ifdef CD_ENABLE_EMF
+static cdluaCallback cdluaemfcb[1] =
 {{
   -1,
   "SIZECB",
   (cdCallback)emf_sizecb
 }};
+#endif
 
 #ifdef CD_ENABLE_EMF
 static cdluaContext cdluaemfctx =
@@ -617,6 +623,7 @@ static cdluaContext cdluaemfctx =
 };
 #endif
 
+#ifdef CD_ENABLE_EMF
 /***************************************************************************\
 * EMF CD_SIZECB.                                                            *
 \***************************************************************************/
@@ -624,6 +631,7 @@ static int emf_sizecb(cdCanvas *canvas, int w, int h, double mm_w, double mm_h)
 {
   return cdlua5_sizecb(canvas, w, h, mm_w, mm_h, cdluaemfcb[CD_SIZECB].lock);
 }
+#endif
 
 /***************************************************************************\
 * CD_PICTURE.                                                              *
