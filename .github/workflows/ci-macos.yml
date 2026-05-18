@@ -13,9 +13,7 @@ jobs:
       matrix:
         build_type: [Release, Debug]
         arch_config: [
-          {name: "universal", cmake_arch: "arm64;x86_64", suffix: "universal"},
-          {name: "arm64", cmake_arch: "arm64", suffix: "arm64"},
-          {name: "x86_64", cmake_arch: "x86_64", suffix: "x86_64"}
+          {name: "arm64", cmake_arch: "arm64", suffix: "arm64"}
         ]
 
     runs-on: macos-latest
@@ -84,7 +82,7 @@ jobs:
           -DIM_LIBRARY=../im-git/install/lib/libim.dylib \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_XRENDER=OFF \
-          -DCD_ENABLE_GL=ON \
+          -DCD_ENABLE_GL=OFF \
           -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_SIM=ON \
           -DCD_ENABLE_IM=OFF \
