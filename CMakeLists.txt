@@ -311,7 +311,7 @@ set_target_properties(cd PROPERTIES
 
 # Windows .def file support for symbol export
 if(WIN32 AND BUILD_SHARED_LIBS)
-    target_sources(cd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cd.def)
+    target_sources(cd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cd_windows.def)
 endif()
 
 # Compiler definitions
