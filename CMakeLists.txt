@@ -11,6 +11,16 @@ endif()
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 
+# Installed libraries must be able to find their siblings. cdlua links against
+# cd, whose install name is @rpath/libcd.<v>.dylib, so without an install rpath
+# the installed cdlua cannot be loaded at all. Relative to the loader so that
+# the install tree stays relocatable.
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+else()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
+endif()
+
 # Options for different backends
 option(CD_ENABLE_CAIRO "Enable Cairo backend" ON)
 option(CD_ENABLE_XRENDER "Enable X11 XRender backend" ON)
