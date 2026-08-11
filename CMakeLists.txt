@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-project(CD VERSION 5.14.0 LANGUAGES C CXX)
+
+# Objective-C is only needed by the macOS native window driver
+if(APPLE)
+    project(CD VERSION 5.14.0 LANGUAGES C CXX OBJC)
+else()
+    project(CD VERSION 5.14.0 LANGUAGES C CXX)
+endif()
 
 # Set C and C++ standards
 set(CMAKE_C_STANDARD 99)
@@ -16,6 +22,7 @@ option(CD_ENABLE_DIRECT2D "Enable Direct2D backend (Windows only)" WIN32)
 option(CD_ENABLE_GDIPLUS "Enable GDI+ backend (Windows only)" WIN32)
 option(CD_ENABLE_GDK "Enable GDK backend (Linux)" ${CD_PLATFORM_LINUX})
 option(CD_ENABLE_HAIKU "Enable Haiku backend (Haiku OS)" ${CD_PLATFORM_HAIKU})
+option(CD_ENABLE_QUARTZ "Enable Quartz backend (macOS only)" ON)
 option(CD_ENABLE_LUA "Enable Lua bindings" ON)
 option(CD_ENABLE_CGM "Enable CGM backend" ON)
 option(CD_ENABLE_SVG "Enable SVG backend" ON)
@@ -237,8 +244,16 @@ elseif(CD_PLATFORM_LINUX)
         list(APPEND CD_DRIVER_SOURCES ${GDK_SOURCES})
     endif()
 elseif(CD_PLATFORM_MACOS)
-    # Use native macOS frameworks instead of X11
-    # X11 is disabled on macOS to use CoreGraphics/CoreText natively
+    # X11 is disabled on macOS, the Quartz driver uses CoreGraphics/CoreText
+    if(CD_ENABLE_QUARTZ)
+        list(APPEND CD_DRIVER_SOURCES
+            src/quartz/cdquartz.c
+            src/quartz/cdquartzbitmap.c
+            src/quartz/cdquartzimg.c
+            src/quartz/cdquartzdbuf.c
+            src/quartz/cdquartznative.m
+        )
+    endif()
 elseif(CD_PLATFORM_HAIKU)
     # Haiku platform support
     if(CD_ENABLE_HAIKU)
@@ -349,6 +364,14 @@ elseif(CD_PLATFORM_LINUX)
 elseif(CD_PLATFORM_MACOS)
     # Use native macOS frameworks only
     target_link_libraries(cd PRIVATE "-framework CoreGraphics" "-framework CoreText")
+    if(CD_ENABLE_QUARTZ)
+        target_include_directories(cd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/quartz)
+        target_link_libraries(cd PRIVATE "-framework CoreFoundation" "-framework Cocoa")
+        target_compile_definitions(cd PRIVATE CD_ENABLE_QUARTZ)
+        # ARC is not used, the driver manages CoreFoundation lifetimes itself
+        set_source_files_properties(src/quartz/cdquartznative.m PROPERTIES
+            COMPILE_OPTIONS "-fno-objc-arc")
+    endif()
 elseif(CD_PLATFORM_HAIKU)
     # Haiku-specific libraries
     target_link_libraries(cd PRIVATE be)
@@ -415,6 +438,13 @@ if(FREETYPE_FOUND)
 endif()
 
 # IM integration
+# SIM: src/drv/cdirgb.c uses this to decide whether the simulation driver is
+# available. Without it that driver sets cxLine/cxArc/cxSector to NULL and CD
+# calls through the null pointer.
+if(CD_ENABLE_SIM)
+    target_compile_definitions(cd PRIVATE CD_ENABLE_SIM)
+endif()
+
 if(CD_ENABLE_IM AND IM_FOUND)
     target_include_directories(cd PRIVATE ${IM_INCLUDE_DIR})
     target_link_libraries(cd PRIVATE ${IM_LIBRARY})
@@ -643,6 +673,9 @@ if(CD_PLATFORM_LINUX)
 endif()
 if(CD_PLATFORM_HAIKU)
     message(STATUS "  Haiku backend: ${CD_ENABLE_HAIKU}")
+endif()
+if(CD_PLATFORM_MACOS)
+    message(STATUS "  Quartz backend: ${CD_ENABLE_QUARTZ}")
 endif()
 
 if(CD_BUILD_TESTS)

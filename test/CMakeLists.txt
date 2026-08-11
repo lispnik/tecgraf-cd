@@ -93,6 +93,11 @@ endif()
 # Font access tests
 add_cd_test(test_font_access tests/test_font_access.c)
 
+# Quartz backend tests (macOS)
+if(APPLE AND CD_ENABLE_QUARTZ)
+    add_cd_test(test_quartz tests/test_quartz.c)
+endif()
+
 # Custom targets
 add_custom_target(test_cd
     COMMAND ${CMAKE_COMMAND} -E echo "Running CD Test Suite..."
