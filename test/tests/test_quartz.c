@@ -16,6 +16,7 @@
 #include "cdirgb.h"
 #include "cdimage.h"
 #include "cddbuf.h"
+#include "cdclipbd.h"
 #include "test_utils.h"
 
 #define CANVAS_W 200
@@ -631,6 +632,91 @@ static int test_stipple_fill(void)
 
 /*---------------------------------------------------------------------------*/
 
+/* All clipboard tests use a private pasteboard so that running the suite does
+   not disturb whatever the user has copied. */
+#define CLIP_BOARD "-pCDQuartzTestPasteboard"
+
+/* Copies a red box through the clipboard in the given format and checks that
+   playing it back reproduces the drawing. */
+static int clipboard_roundtrip(const char* flags, const char* what)
+{
+    char data[128];
+    cdCanvas* clip;
+    cdCanvas* target;
+    int ok = 1;
+
+    sprintf(data, "%dx%d %s %s", CANVAS_W, CANVAS_H, flags, CLIP_BOARD);
+
+    clip = cdCreateCanvas(cdContextClipboard(), data);
+    if (!clip) {
+        printf("FAIL: %s - could not create a clipboard canvas (%s)\n", what, data);
+        return 0;
+    }
+
+    cdCanvasBackground(clip, CD_WHITE);
+    cdCanvasClear(clip);
+    cdCanvasForeground(clip, CD_RED);
+    cdCanvasBox(clip, 20, 99, 20, 79);
+    cdKillCanvas(clip);            /* this is what puts it on the pasteboard */
+
+    target = create_quartz();
+    if (!target) {
+        printf("FAIL: %s - could not create the target canvas\n", what);
+        return 0;
+    }
+
+    if (cdCanvasPlay(target, cdContextClipboard(), 0, 0, 0, 0, CLIP_BOARD) != CD_OK) {
+        printf("FAIL: %s - Play returned an error\n", what);
+        cdKillCanvas(target);
+        return 0;
+    }
+
+    if (!check_pixel(target, 60, 50, CD_RED, what))
+        ok = 0;
+    if (!check_pixel(target, 160, 120, CD_WHITE, what))
+        ok = 0;
+
+    cdKillCanvas(target);
+    return ok;
+}
+
+static int test_clipboard_pdf(void)
+{
+    return clipboard_roundtrip("", "clipboard PDF");
+}
+
+static int test_clipboard_bitmap(void)
+{
+    return clipboard_roundtrip("-b", "clipboard bitmap");
+}
+
+static int test_clipboard_metafile(void)
+{
+    return clipboard_roundtrip("-m", "clipboard metafile");
+}
+
+/* Play must report an error rather than draw something arbitrary when the
+   pasteboard holds nothing it understands. */
+static int test_clipboard_empty(void)
+{
+    cdCanvas* target = create_quartz();
+    int ret;
+
+    TEST_ASSERT_NOT_NULL(target, "canvas creation failed");
+
+    ret = cdCanvasPlay(target, cdContextClipboard(), 0, 0, 0, 0,
+                       "-pCDQuartzTestEmptyPasteboard");
+
+    TEST_ASSERT(ret == CD_ERROR, "Play on an empty pasteboard should fail");
+    TEST_ASSERT(check_pixel(target, 100, 75, CD_WHITE, "untouched canvas"),
+                "a failed Play should not draw");
+
+    cdKillCanvas(target);
+    return 1;
+}
+
+/*---------------------------------------------------------------------------*/
+
 int main(void)
 {
     printf("Running CD Quartz Driver Tests...\n");
@@ -652,6 +738,10 @@ int main(void)
     RUN_TEST(test_interior_styles);
     RUN_TEST(test_pattern_fill);
     RUN_TEST(test_stipple_fill);
+    RUN_TEST(test_clipboard_pdf);
+    RUN_TEST(test_clipboard_bitmap);
+    RUN_TEST(test_clipboard_metafile);
+    RUN_TEST(test_clipboard_empty);
 
     printf("\nQuartz Tests Summary:\n");
     printf("Total tests: %d\n", tests_total);

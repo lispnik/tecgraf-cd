@@ -252,6 +252,7 @@ elseif(CD_PLATFORM_MACOS)
             src/quartz/cdquartzimg.c
             src/quartz/cdquartzdbuf.c
             src/quartz/cdquartznative.m
+            src/quartz/cdquartzclipboard.m
         )
     endif()
 elseif(CD_PLATFORM_HAIKU)
@@ -369,8 +370,10 @@ elseif(CD_PLATFORM_MACOS)
         target_link_libraries(cd PRIVATE "-framework CoreFoundation" "-framework Cocoa")
         target_compile_definitions(cd PRIVATE CD_ENABLE_QUARTZ)
         # ARC is not used, the driver manages CoreFoundation lifetimes itself
-        set_source_files_properties(src/quartz/cdquartznative.m PROPERTIES
-            COMPILE_OPTIONS "-fno-objc-arc")
+        set_source_files_properties(
+            src/quartz/cdquartznative.m
+            src/quartz/cdquartzclipboard.m
+            PROPERTIES COMPILE_OPTIONS "-fno-objc-arc")
     endif()
 elseif(CD_PLATFORM_HAIKU)
     # Haiku-specific libraries

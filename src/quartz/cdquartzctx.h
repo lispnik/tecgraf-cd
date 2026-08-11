@@ -69,6 +69,11 @@ struct _cdCtxCanvas
 
   cdImage* image_dbuffer;    /* used by the double buffer driver */
   cdCanvas* canvas_dbuffer;
+
+  /* used by the clipboard driver */
+  int clipboard_mode;
+  void* clipboard_data;      /* NSMutableData* holding the PDF being written */
+  void* clipboard_name;      /* NSString*, retained, nil for the general pasteboard */
 };
 
 #define cdQuartzRed(_)   (((CGFloat)cdRed(_))/255.)
