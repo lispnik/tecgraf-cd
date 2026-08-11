@@ -26,8 +26,13 @@ jobs:
         vcpkg install freetype:x64-windows
         vcpkg integrate install
 
+    # These artifacts expire after GitHub's retention period, which broke every
+    # build regardless of the commit. They are only needed for CD_ENABLE_IM=ON,
+    # and this workflow builds with IM off, so a missing artifact must not fail
+    # the job.
     - name: Download IM artifacts
       uses: dawidd6/action-download-artifact@v2
+      continue-on-error: true
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow: ci-windows.yml
@@ -35,9 +40,11 @@ jobs:
         branch: master
         name: im-libs-windows-2022
         path: im-git/install/lib
+        if_no_artifact_found: warn
 
     - name: Download IM headers
       uses: dawidd6/action-download-artifact@v2
+      continue-on-error: true
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow: ci-windows.yml
@@ -45,6 +52,7 @@ jobs:
         branch: master
         name: im-headers-windows-2022
         path: im-git/install/include
+        if_no_artifact_found: warn
 
     - name: Configure CMake
       run: |

@@ -51,8 +51,13 @@ jobs:
         echo "PKG_CONFIG_PATH=$(brew --prefix freetype)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
         echo "FREETYPE_DIR=$(brew --prefix freetype)" >> $GITHUB_ENV
 
+    # These artifacts expire after GitHub's retention period, which broke every
+    # build regardless of the commit. They are only needed for CD_ENABLE_IM=ON,
+    # and this workflow builds with IM off, so a missing artifact must not fail
+    # the job.
     - name: Download IM artifacts
       uses: dawidd6/action-download-artifact@v2
+      continue-on-error: true
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow: ci-macos.yml
@@ -60,9 +65,11 @@ jobs:
         branch: master
         name: im-libs-macos-15
         path: im-git/install/lib
+        if_no_artifact_found: warn
 
     - name: Download IM headers
       uses: dawidd6/action-download-artifact@v2
+      continue-on-error: true
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow: ci-macos.yml
@@ -70,6 +77,7 @@ jobs:
         branch: master
         name: im-headers-macos-15
         path: im-git/install/include
+        if_no_artifact_found: warn
 
     - name: Configure CMake
       run: |
