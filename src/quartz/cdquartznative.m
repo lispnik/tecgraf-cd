@@ -38,6 +38,27 @@ static CGContextRef sViewGetContext(NSView* view, int* locked)
 
   if (!nsc)
   {
+    /* No current context means we are being asked to draw outside a draw cycle, which is
+       routine: IupPlot's REDRAW attribute, for one, renders immediately rather than posting
+       an invalidation. -lockFocus is the historical answer and is what the fallback below
+       still does, but on a modern, layer-backed AppKit it does not reliably reach the screen
+       and nothing marks the view dirty, so the drawing is simply lost until something else
+       forces a repaint -- resizing the window, typically. That is exactly how it looked:
+       toggles and dials in the plot sample "worked" but showed nothing until a resize.
+
+       A host view that keeps its own persistent backing store can offer it through a
+       -CGContext accessor (IUP's canvas view does). Drawing there always lands, and asking
+       for a repaint afterwards gets it on screen at the next display pass. */
+    if ([view respondsToSelector:@selector(CGContext)])
+    {
+      CGContextRef host_context = (CGContextRef)[view performSelector:@selector(CGContext)];
+      if (host_context)
+      {
+        [view setNeedsDisplay:YES];
+        return host_context;
+      }
+    }
+
     if (![view lockFocusIfCanDraw])
       return NULL;
 
