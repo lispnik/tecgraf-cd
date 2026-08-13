@@ -36,6 +36,18 @@ static CGContextRef sViewGetContext(NSView* view, int* locked)
 
   *locked = 0;
 
+  /* If nothing is focused for drawing then we are outside any draw cycle, and whatever gets
+     drawn now has to be asked for on screen -- AppKit will not do it on its own.
+
+     This is not the same as "there is no current context". A host whose view redirects focus
+     locking at a persistent backing store (IUP's canvas does exactly that) can leave that
+     context current after an unbalanced lock, in which case the branch below never runs again
+     and the drawing lands correctly but silently. That is precisely how IupPlot behaved: every
+     grid toggle, autoscale toggle and dial re-rendered the plot into the backing store, and
+     none of it appeared until an unrelated repaint -- resizing the window -- blitted it. */
+  if ([NSView focusView] != view)
+    [view setNeedsDisplay:YES];
+
   if (!nsc)
   {
     if (![view lockFocusIfCanDraw])
