@@ -96,6 +96,12 @@ add_cd_test(test_font_access tests/test_font_access.c)
 # Quartz backend tests (macOS)
 if(APPLE AND CD_ENABLE_QUARTZ)
     add_cd_test(test_quartz tests/test_quartz.c)
+
+    # The CGPDFContext-based CD_PDF driver, built whenever the PDFlib one is not
+    if(NOT CD_ENABLE_PDF)
+        add_cd_test(test_quartz_pdf tests/test_quartz_pdf.c)
+        target_link_libraries(test_quartz_pdf PRIVATE "-framework ApplicationServices")
+    endif()
 endif()
 
 # Custom targets

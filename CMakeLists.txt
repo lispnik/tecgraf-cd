@@ -264,6 +264,12 @@ elseif(CD_PLATFORM_MACOS)
             src/quartz/cdquartznative.m
             src/quartz/cdquartzclipboard.m
         )
+        # Native PDF through CGPDFContext, so that CD_PDF exists without PDFlib.
+        # Mutually exclusive with src/drv/cdpdf.c: both define cdContextPDF.
+        if(NOT CD_ENABLE_PDF)
+            list(APPEND CD_DRIVER_SOURCES src/quartz/cdquartzpdf.c)
+            set(CD_QUARTZ_PDF TRUE)
+        endif()
     endif()
 elseif(CD_PLATFORM_HAIKU)
     # Haiku platform support
@@ -671,6 +677,9 @@ message(STATUS "  Cairo backend: ${CD_ENABLE_CAIRO}")
 message(STATUS "  XRender backend: ${CD_ENABLE_XRENDER}")
 message(STATUS "  OpenGL backend: ${CD_ENABLE_GL}")
 message(STATUS "  PDF backend: ${CD_ENABLE_PDF}")
+if(CD_QUARTZ_PDF)
+    message(STATUS "  PDF backend (Quartz/CGPDFContext): ON, so CD_PDF works without PDFlib")
+endif()
 message(STATUS "  CGM backend: ${CD_ENABLE_CGM}")
 message(STATUS "  SVG backend: ${CD_ENABLE_SVG}")
 message(STATUS "  SIM backend: ${CD_ENABLE_SIM}")

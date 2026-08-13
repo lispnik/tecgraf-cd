@@ -40,6 +40,12 @@ applications can NOT use PDFLib Lite. Commercial applications can only use the
 regular PDFLib, and it is only available under the terms of a commercial 
 license, and always require a license fee.</p>
 <p>An alternative is to use the <a href="cairo.html">CD_CAIRO_PDF</a> driver, which is free.</p>
+<p class="auto-style1"><strong>On macOS this driver is not used at all.</strong> CD_PDF is
+implemented natively there on top of CoreGraphics' CGPDFContext (src/quartz/cdquartzpdf.c), so it
+needs no third-party library and carries no licence restriction. It is built whenever
+CD_ENABLE_PDF is off, which is the default, and the two are mutually exclusive because both
+define cdContextPDF. It accepts the same data string documented below, and text is embedded
+through CoreText rather than rasterized.</p>
 
 <h3>Use</h3>
 
