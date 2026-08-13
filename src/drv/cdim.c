@@ -185,8 +185,13 @@ void wdCanvasGetImImage(cdCanvas* canvas, imImage* image, double x, double y)
 
 static void(*cdcreatecanvasIMAGERGB)(cdCanvas* canvas, void *data) = NULL;
 
-static void cdcreatecanvas(cdCanvas* canvas, imImage* image)
+/* The cxCreateCanvas slot is void(*)(cdCanvas*, void*) -- every other driver takes void* and
+   casts. Declaring the parameter as imImage* made the initialiser below an incompatible
+   function pointer, which older compilers accepted with a warning and clang 15 and later
+   reject outright, so the whole library failed to build with CD_ENABLE_IM=ON. */
+static void cdcreatecanvas(cdCanvas* canvas, void *data)
 {
+  imImage* image = (imImage*)data;
   char data_s[100];
   double res = 0;
   const char* res_unit;
