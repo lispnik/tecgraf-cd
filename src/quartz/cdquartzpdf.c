@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "cdquartzctx.h"
+#include "cdquartzpdf.h"
 #include "cdpdf.h"
 
 
@@ -69,7 +70,7 @@ static void sEndPage(cdCtxCanvas* ctxcanvas)
 
 /* cdCanvasFlush means "start a new page" for a paged file format, the same as
    it does in the PDFlib and PostScript drivers. */
-static void cdflush(cdCtxCanvas* ctxcanvas)
+void cdquartzPDFNewPage(cdCtxCanvas* ctxcanvas)
 {
   CGContextRef cgc = ctxcanvas->cgc;
   int owns_cgc = ctxcanvas->owns_cgc;
@@ -85,13 +86,18 @@ static void cdflush(cdCtxCanvas* ctxcanvas)
   ctxcanvas->owns_cgc = owns_cgc;
 }
 
-static void cdkillcanvas(cdCtxCanvas* ctxcanvas)
+void cdquartzPDFClose(cdCtxCanvas* ctxcanvas)
 {
   if (ctxcanvas->cgc)
   {
     sEndPage(ctxcanvas);
     CGPDFContextClose(ctxcanvas->cgc);
   }
+}
+
+static void cdkillcanvas(cdCtxCanvas* ctxcanvas)
+{
+  cdquartzPDFClose(ctxcanvas);
 
   /* the base releases the context, since owns_cgc is set */
   cdquartzKillCanvas(ctxcanvas);
@@ -162,7 +168,8 @@ static CFDictionaryRef sCreateAuxiliaryInfo(void)
   return info;
 }
 
-static void cdcreatecanvas(cdCanvas* canvas, void* data)
+cdCtxCanvas* cdquartzPDFCreateCanvas(cdCanvas* canvas, const char* filename,
+                                     double w_mm, double h_mm, double dpi)
 {
   cdCtxCanvas* ctxcanvas;
   CGContextRef cgc;
@@ -170,35 +177,22 @@ static void cdcreatecanvas(cdCanvas* canvas, void* data)
   CFStringRef path;
   CFDictionaryRef info;
   CGRect media;
-  char filename[10240] = "";
-  double w_mm, h_mm, dpi, points_per_pixel;
-  int landscape;
+  double points_per_pixel;
 
-  if (!data)
-    return;
-
-  sParseData((const char*)data, filename, &w_mm, &h_mm, &dpi, &landscape);
-  if (filename[0] == 0)
-    return;
-
-  if (landscape)
-  {
-    double tmp = w_mm;
-    w_mm = h_mm;
-    h_mm = tmp;
-  }
+  if (!filename || filename[0] == 0)
+    return NULL;
 
   if (w_mm <= 0 || h_mm <= 0 || dpi <= 0)
-    return;
+    return NULL;
 
   path = CFStringCreateWithCString(NULL, filename, kCFStringEncodingUTF8);
   if (!path)
-    return;
+    return NULL;
 
   url = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, false);
   CFRelease(path);
   if (!url)
-    return;
+    return NULL;
 
   media = CGRectMake(0, 0, (CGFloat)(w_mm / 25.4 * 72.0), (CGFloat)(h_mm / 25.4 * 72.0));
 
@@ -209,7 +203,7 @@ static void cdcreatecanvas(cdCanvas* canvas, void* data)
     CFRelease(info);
 
   if (!cgc)
-    return;
+    return NULL;
 
   /* The size fields must be right before the first page is set up, because the
      CTM scale is derived from the resolution. */
@@ -230,22 +224,51 @@ static void cdcreatecanvas(cdCanvas* canvas, void* data)
   {
     CGPDFContextClose(cgc);
     CGContextRelease(cgc);
-    return;
+    return NULL;
   }
 
   ctxcanvas->owns_cgc = 1;
+  return ctxcanvas;
 }
 
-static void cdinittable(cdCanvas* canvas)
+/* "filename -p[paper] -w[mm] -h[mm] -s[dpi] [-o]", as documented for CD_PDF */
+static void cdcreatecanvas(cdCanvas* canvas, void* data)
+{
+  char filename[10240] = "";
+  double w_mm, h_mm, dpi;
+  int landscape;
+
+  if (!data)
+    return;
+
+  sParseData((const char*)data, filename, &w_mm, &h_mm, &dpi, &landscape);
+
+  if (landscape)
+  {
+    double tmp = w_mm;
+    w_mm = h_mm;
+    h_mm = tmp;
+  }
+
+  cdquartzPDFCreateCanvas(canvas, filename, w_mm, h_mm, dpi);
+}
+
+void cdquartzPDFInitTable(cdCanvas* canvas)
 {
   cdquartzInitTable(canvas);
 
-  canvas->cxFlush = cdflush;
-  canvas->cxKillCanvas = cdkillcanvas;
+  canvas->cxFlush = cdquartzPDFNewPage;
 
   /* a PDF page has no pixels to read back, as for the native window driver */
   canvas->cxGetImageRGB = NULL;
   canvas->cxScrollArea = NULL;
+}
+
+static void cdinittable(cdCanvas* canvas)
+{
+  cdquartzPDFInitTable(canvas);
+
+  canvas->cxKillCanvas = cdkillcanvas;
 }
 
 static cdContext cdQuartzPDFContext =

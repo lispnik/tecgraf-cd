@@ -272,6 +272,11 @@ elseif(CD_PLATFORM_MACOS)
         if(NOT CD_ENABLE_PDF)
             list(APPEND CD_DRIVER_SOURCES src/quartz/cdquartzpdf.c)
             set(CD_QUARTZ_PDF TRUE)
+
+            # The printer driver spools through the PDF driver, so it needs it. Without this
+            # cdContextPrinter comes from src/drv/cd0prn.c and always returns NULL.
+            list(APPEND CD_DRIVER_SOURCES src/quartz/cdquartzprn.m)
+            set(CD_QUARTZ_PRINTER TRUE)
         endif()
     endif()
 elseif(CD_PLATFORM_HAIKU)
@@ -409,6 +414,7 @@ elseif(CD_PLATFORM_MACOS)
         set_source_files_properties(
             src/quartz/cdquartznative.m
             src/quartz/cdquartzclipboard.m
+            src/quartz/cdquartzprn.m
             PROPERTIES COMPILE_OPTIONS "-fno-objc-arc")
     endif()
 elseif(CD_PLATFORM_HAIKU)
@@ -699,6 +705,9 @@ message(STATUS "  OpenGL backend: ${CD_ENABLE_GL}")
 message(STATUS "  PDF backend: ${CD_ENABLE_PDF}")
 if(CD_QUARTZ_PDF)
     message(STATUS "  PDF backend (Quartz/CGPDFContext): ON, so CD_PDF works without PDFlib")
+endif()
+if(CD_QUARTZ_PRINTER)
+    message(STATUS "  Printer backend (Quartz/NSPrintOperation): ON")
 endif()
 message(STATUS "  CGM backend: ${CD_ENABLE_CGM}")
 message(STATUS "  PS backend: ${CD_ENABLE_PS}")

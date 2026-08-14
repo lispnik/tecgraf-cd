@@ -107,6 +107,11 @@ if(APPLE AND CD_ENABLE_QUARTZ)
     if(NOT CD_ENABLE_PDF)
         add_cd_test(test_quartz_pdf tests/test_quartz_pdf.c)
         target_link_libraries(test_quartz_pdf PRIVATE "-framework ApplicationServices")
+
+        # CD_PRINTER spools through that driver. The test never reaches a printer: it points
+        # NSPrintInfo at a file, which is a documented print destination.
+        add_cd_test(test_quartz_printer tests/test_quartz_printer.m)
+        target_link_libraries(test_quartz_printer PRIVATE "-framework Cocoa")
     endif()
 endif()
 

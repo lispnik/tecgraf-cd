@@ -19,6 +19,12 @@
   <a href="../func/init.html#cdCreateCanvas">
   <font face="Courier"><strong>cdCreateCanvas</strong></font></a> will return 
   NULL.</p>
+<p class="auto-style1"><strong>On macOS this driver is implemented on the Quartz base driver</strong>
+(src/quartz/cdquartzprn.m), so CD_PRINTER works there too. macOS spools print jobs as PDF, so the
+driver draws into a PDF through the same code as CD_PDF and hands the finished document to
+NSPrintOperation when the canvas is killed; cdCanvasFlush starts a new page as it does for the
+file drivers, and "-d" shows the standard print panel.</p>
+
 
 <h3>Use</h3>
 
