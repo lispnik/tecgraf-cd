@@ -5,6 +5,9 @@
 
 #include "test_utils.h"
 
+#include <string.h>
+#include <sys/time.h>   /* gettimeofday, used by the timing test */
+
 int test_rgb_image_operations(void) {
     printf("  Testing RGB image operations...\n");
 
@@ -100,10 +103,11 @@ int test_indexed_image_operations(void) {
     unsigned char* index = malloc(width * height);
     long colors[16];
 
-    /* Create a rainbow palette */
+    /* Create a rainbow palette. The conversion is the tests' own helper: CD has no HSV
+       conversion, and cdColorHSV2RGB -- which this used to call -- exists in no header. */
     for (int i = 0; i < 16; i++) {
         unsigned char r, g, b;
-        cdColorHSV2RGB(i * 360.0 / 16, 1.0, 1.0, &r, &g, &b);
+        test_hsv_to_rgb(i * 360.0 / 16, 1.0, 1.0, &r, &g, &b);
         colors[i] = cdEncodeColor(r, g, b);
     }
 
@@ -176,17 +180,28 @@ int test_image_data_retrieval(void) {
         cdCanvasForeground(rgb_canvas, CD_RED);
         cdCanvasBox(rgb_canvas, 20, 80, 20, 80);
 
-        /* Try to get image data back */
-        unsigned char* image_data = cdCanvasGetImageRGB(rgb_canvas);
-        if (image_data) {
-            printf("    Retrieved RGB image data successfully\n");
-            /* Check some pixels */
-            int center_pixel = (50 * 100 + 50) * 3;  /* RGB pixel at center */
-            printf("    Center pixel RGB: (%d,%d,%d)\n",
-                   image_data[center_pixel], image_data[center_pixel+1], image_data[center_pixel+2]);
-            free(image_data);
-        }
+        /* cdCanvasGetImageRGB fills three caller-owned planes -- it does not return a packed
+           buffer, which is what this test used to assume. */
+        int w = 100, h = 100, center = 50 * w + 50;
+        unsigned char* r = malloc((size_t)w * h);
+        unsigned char* g = malloc((size_t)w * h);
+        unsigned char* b = malloc((size_t)w * h);
 
+        memset(r, 0, (size_t)w * h);
+        memset(g, 0, (size_t)w * h);
+        memset(b, 0, (size_t)w * h);
+
+        cdCanvasGetImageRGB(rgb_canvas, r, g, b, 0, 0, w, h);
+
+        printf("    Center pixel RGB: (%d,%d,%d)\n", r[center], g[center], b[center]);
+
+        /* the box drawn above covers the centre, so the read-back must show it */
+        TEST_ASSERT(r[center] > 200 && g[center] < 60 && b[center] < 60,
+                    "reading the canvas back should show the red box that was drawn");
+
+        free(r);
+        free(g);
+        free(b);
         test_destroy_canvas(rgb_canvas);
     }
 
@@ -215,13 +230,20 @@ int test_server_images(void) {
         }
     }
 
-    /* Create server image */
-    cdImage* server_image = cdCanvasCreateImageRGB(canvas, width, height, red, green, blue);
+    /* A server image is created empty and filled by capturing from the canvas -- there is no
+       cdCanvasCreateImageRGB, which is what this test used to call. So draw the gradient, then
+       take a copy of it. */
+    cdImage* server_image = cdCanvasCreateImage(canvas, width, height);
     if (server_image) {
-        /* Use server image multiple times */
-        cdCanvasPutImageRect(canvas, server_image, 50, 50, width, height, 0, width-1, 0, height-1);
-        cdCanvasPutImageRect(canvas, server_image, 150, 50, width/2, height/2, 0, width-1, 0, height-1);
-        cdCanvasPutImageRect(canvas, server_image, 250, 50, width*2, height*2, 0, width-1, 0, height-1);
+        cdCanvasPutImageRectRGB(canvas, width, height, red, green, blue,
+                                0, 0, width, height, 0, width-1, 0, height-1);
+        cdCanvasGetImage(canvas, server_image, 0, 0);
+
+        /* Use it several times. cdCanvasPutImageRect takes a destination position and a source
+           rectangle -- eight arguments, not a destination size as well. */
+        cdCanvasPutImageRect(canvas, server_image, 50, 50, 0, width-1, 0, height-1);
+        cdCanvasPutImageRect(canvas, server_image, 150, 50, 0, width/2, 0, height/2);
+        cdCanvasPutImageRect(canvas, server_image, 250, 50, 0, 0, 0, 0);   /* whole image */
 
         /* Clean up */
         cdKillImage(server_image);

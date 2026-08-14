@@ -5,6 +5,8 @@
 
 #include "test_utils.h"
 
+#include <cdirgb.h>   /* cdContextImageRGB */
+
 int test_canvas_creation_edge_cases(void) {
     /* Test for canvas creation with minimal sizes */
     cdCanvas* canvas = cdCreateCanvas(cdContextImageRGB(), "1x1");

@@ -4,6 +4,10 @@
  */
 
 #include "test_utils.h"
+
+/* A row of 60 "=". The original wrote "="*60, which multiplies a pointer by an
+   integer -- valid Python, not valid C. */
+#define TEST_RULE "============================================================"
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
@@ -100,9 +104,9 @@ int run_single_test(const test_suite* suite, test_results* results) {
 }
 
 void print_test_summary(const test_results* results) {
-    printf("\n" "="*60 "\n");
+    printf("\n%s\n", TEST_RULE);
     printf("CD LIBRARY TEST SUITE SUMMARY\n");
-    printf("="*60 "\n");
+    printf("%s\n", TEST_RULE);
     printf("Total test suites: %d\n", results->total_tests);
     printf("Passed: %d\n", results->passed_tests);
     printf("Failed: %d\n", results->failed_tests);
@@ -119,7 +123,7 @@ void print_test_summary(const test_results* results) {
         printf("%s", results->error_log);
     }
 
-    printf("="*60 "\n");
+    printf("%s\n", TEST_RULE);
 }
 
 void generate_html_report(const test_results* results) {

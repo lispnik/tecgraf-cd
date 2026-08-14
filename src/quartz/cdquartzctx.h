@@ -93,6 +93,9 @@ void cdquartzUpdateCanvas(cdCtxCanvas* ctxcanvas, CGContextRef cgc);
    Returns NULL on failure, otherwise *data receives the owned pixel buffer. */
 CGContextRef cdquartzCreateBitmap(int w, int h, unsigned char** data);
 
+/* true when the canvas is driven by the Quartz base driver, so its cdCtxImage is ours */
+int cdquartzIsCanvas(cdCanvas* canvas);
+
 /* fills in canvas size/resolution fields from a pixel size */
 void cdquartzSetCanvasSize(cdCanvas* canvas, int w, int h);
 

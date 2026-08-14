@@ -103,6 +103,16 @@ void test_generate_test_image_rgb(int width, int height, unsigned char** r, unsi
 void test_generate_test_image_rgba(int width, int height, unsigned char** r, unsigned char** g, unsigned char** b, unsigned char** a);
 void test_generate_gradient_pattern(int width, int height, long** pattern);
 
+/* Colour space helpers.
+   CD has no HSV conversion of its own -- several tests called cdColorRGB2HSV and
+   cdColorHSV2RGB, which exist in no header -- so the maths lives here, where it is clearly the
+   tests' own and not something being asserted about the library. Hue is in [0,360), saturation
+   and value in [0,1]. */
+void test_rgb_to_hsv(unsigned char r, unsigned char g, unsigned char b,
+                     double* h, double* s, double* v);
+void test_hsv_to_rgb(double h, double s, double v,
+                     unsigned char* r, unsigned char* g, unsigned char* b);
+
 /* File utilities */
 int test_file_exists(const char* filename);
 void test_cleanup_files(void);

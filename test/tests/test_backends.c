@@ -76,8 +76,8 @@ int test_irgb_backend(void) {
 }
 
 int test_debug_backend(void) {
-    /* Redirect debug output to a file for testing */
-    cdCanvas* canvas = cdCreateCanvas(cdContextDebug(), NULL);
+    /* The debug driver logs to a file, so it needs one named; NULL gives it nothing to open. */
+    cdCanvas* canvas = cdCreateCanvas(cdContextDebug(), "test_debug_backend.deb");
     TEST_ASSERT_NOT_NULL(canvas, "Debug canvas creation failed");
 
     cdCanvasActivate(canvas);
@@ -98,7 +98,13 @@ int test_dbuffer_backend(void) {
     cdCanvas* rgb_canvas = cdCreateCanvas(cdContextImageRGB(), "400x300");
     TEST_ASSERT_NOT_NULL(rgb_canvas, "RGB canvas creation failed");
 
-    cdCanvas* dbuf_canvas = cdCreateCanvas(cdContextDBuffer(), rgb_canvas);
+    /* CD_DBUFFER is documented for window canvases, and its back buffer is a server image of
+       the target's own driver -- so against an RGB canvas it must refuse rather than
+       reinterpret. It used to crash here instead. CD_DBUFFERRGB is the pairing for RGB. */
+    TEST_ASSERT(cdCreateCanvas(cdContextDBuffer(), rgb_canvas) == NULL,
+                "CD_DBUFFER should refuse a canvas from another base driver");
+
+    cdCanvas* dbuf_canvas = cdCreateCanvas(cdContextDBufferRGB(), rgb_canvas);
     TEST_ASSERT_NOT_NULL(dbuf_canvas, "Double buffer canvas creation failed");
 
     cdCanvasActivate(dbuf_canvas);
@@ -198,15 +204,20 @@ int test_backend_attributes(void) {
 
 int test_backend_capabilities(void) {
     /* Test capability queries for different backends */
+    /* Capabilities are per driver by design, so there is no capability every backend has --
+       this used to assert CD_CAP_FLUSH across the board, which CD_IMAGERGB rightly does not
+       claim: there is nothing to flush an in-memory canvas to. Each backend is checked against
+       what it actually supports, so a driver quietly losing or gaining a capability shows up. */
     struct {
         cdContext* (*context_func)(void);
         const char* name;
-        unsigned long expected_caps;
+        unsigned long required_caps;
+        unsigned long forbidden_caps;
     } backends[] = {
-        {cdContextSVG, "SVG", CD_CAP_ALL & ~(CD_CAP_CLEAR | CD_CAP_PLAY)},
-        {cdContextImageRGB, "RGB", CD_CAP_ALL},
-        {cdContextDebug, "Debug", CD_CAP_ALL},
-        {cdContextDBuffer, "DBuffer", CD_CAP_ALL & ~(CD_CAP_PLAY | CD_CAP_YAXIS)}
+        {cdContextSVG,      "SVG",     CD_CAP_FLUSH,                CD_CAP_CLEAR | CD_CAP_PLAY},
+        {cdContextImageRGB, "RGB",     CD_CAP_CLEAR,                CD_CAP_FLUSH | CD_CAP_PLAY},
+        {cdContextDebug,    "Debug",   CD_CAP_FLUSH | CD_CAP_CLEAR, 0},
+        {cdContextDBuffer,  "DBuffer", CD_CAP_FLUSH | CD_CAP_CLEAR, CD_CAP_PLAY}
     };
     int num_backends = sizeof(backends) / sizeof(backends[0]);
     int i;
@@ -214,10 +225,12 @@ int test_backend_capabilities(void) {
     for (i = 0; i < num_backends; i++) {
         unsigned long caps = cdContextCaps(backends[i].context_func());
 
-        /* Verify some basic capabilities */
-        TEST_ASSERT((caps & CD_CAP_FLUSH) != 0, "Backend should support flush");
-
         printf("Backend %s capabilities: 0x%08lx\n", backends[i].name, caps);
+
+        TEST_ASSERT((caps & backends[i].required_caps) == backends[i].required_caps,
+                    "Backend is missing a capability it implements");
+        TEST_ASSERT((caps & backends[i].forbidden_caps) == 0,
+                    "Backend claims a capability it does not implement");
     }
 
     return 1;

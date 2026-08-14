@@ -5,6 +5,8 @@
 
 #include "test_utils.h"
 
+#include <sys/time.h>   /* gettimeofday */
+
 int test_drawing_application_simulation(void) {
     printf("  Testing drawing application simulation...\n");
 
@@ -75,7 +77,8 @@ int test_drawing_application_simulation(void) {
 
     /* 4. Brush tool - thick strokes with transparency */
     cdCanvasLineWidth(canvas, 15);
-    cdCanvasOpacity(canvas, 128);
+    /* opacity lives in the colour alpha; CD has no cdCanvasOpacity */
+    cdCanvasForeground(canvas, cdEncodeAlpha(cdCanvasForeground(canvas, CD_QUERY), 128));
     cdCanvasForeground(canvas, CD_YELLOW);
 
     /* Brush stroke */
@@ -88,7 +91,8 @@ int test_drawing_application_simulation(void) {
         cdCanvasLine(canvas, x1, y1, x2, y2);
     }
 
-    cdCanvasOpacity(canvas, 255);  /* Reset opacity */
+    /* opacity lives in the colour alpha; CD has no cdCanvasOpacity */
+    cdCanvasForeground(canvas, cdEncodeAlpha(cdCanvasForeground(canvas, CD_QUERY), 255));  /* Reset opacity */
 
     test_destroy_canvas(canvas);
     return 1;
@@ -207,7 +211,7 @@ int test_complex_document_rendering(void) {
     /* Body content with multiple columns */
     cdCanvasForeground(canvas, CD_BLACK);
     cdCanvasFont(canvas, "Arial", CD_PLAIN, 12);
-    cdCanvasTextAlignment(canvas, CD_LEFT);
+    cdCanvasTextAlignment(canvas, CD_WEST);
 
     /* Left column */
     const char* text_lines[] = {

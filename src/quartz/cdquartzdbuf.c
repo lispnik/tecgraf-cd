@@ -92,6 +92,14 @@ static void cdcreatecanvas(cdCanvas* canvas, void* data)
   if (!canvas_dbuffer)
     return;
 
+  /* The target must be a Quartz canvas: its server image is read below as a cdCtxImage of this
+     driver's, and a canvas from another base driver -- CD_IMAGERGB, say -- has an entirely
+     different one behind that pointer. Reinterpreting it crashed inside CoreGraphics. CD's way
+     to refuse is to return without a context canvas, which cdCreateCanvas reports as NULL; RGB
+     targets have CD_DBUFFERRGB. */
+  if (!cdquartzIsCanvas(canvas_dbuffer))
+    return;
+
   cdCanvasActivate(canvas_dbuffer);
 
   w = canvas_dbuffer->w;

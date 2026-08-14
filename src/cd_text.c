@@ -23,7 +23,9 @@ void cdCanvasText(cdCanvas* canvas, int x, int y, const char *s)
   assert(s);
   if (!_cdCheckCanvas(canvas)) return;
 
-  if (s[0] == 0)
+  /* The assert says NULL is a caller bug, and it is -- but a release build has no assert and
+     went straight on to dereference it. Refusing costs nothing and turns a crash into a no-op. */
+  if (!s || s[0] == 0)
     return;
 
   if (canvas->use_origin)
@@ -119,7 +121,9 @@ void cdfCanvasText(cdCanvas* canvas, double x, double y, const char *s)
   assert(s);
   if (!_cdCheckCanvas(canvas)) return;
 
-  if (s[0] == 0)
+  /* The assert says NULL is a caller bug, and it is -- but a release build has no assert and
+     went straight on to dereference it. Refusing costs nothing and turns a crash into a no-op. */
+  if (!s || s[0] == 0)
     return;
 
   if (canvas->use_origin)
@@ -398,6 +402,13 @@ void cdCanvasGetTextSize(cdCanvas* canvas, const char *s, int *width, int *heigh
   assert(s);
   if (!_cdCheckCanvas(canvas)) return;
 
+  if (!s)
+  {
+    if (width) *width = 0;
+    if (height) *height = 0;
+    return;
+  }
+
   num_line = cdStrLineCount(s);
   if (num_line == 1)
     canvas->cxGetTextSize(canvas->ctxcanvas, s, (int)strlen(s), width, height);
@@ -559,7 +570,9 @@ void cdCanvasGetTextBounds(cdCanvas* canvas, int x, int y, const char *s, int *r
   assert(s);
   if (!_cdCheckCanvas(canvas)) return;
 
-  if (s[0] == 0)
+  /* The assert says NULL is a caller bug, and it is -- but a release build has no assert and
+     went straight on to dereference it. Refusing costs nothing and turns a crash into a no-op. */
+  if (!s || s[0] == 0)
     return;
   
   cdCanvasGetTextSize(canvas, s, &w, &h);
@@ -610,7 +623,9 @@ void cdfCanvasGetTextBounds(cdCanvas* canvas, double x, double y, const char *s,
   assert(s);
   if (!_cdCheckCanvas(canvas)) return;
 
-  if (s[0] == 0)
+  /* The assert says NULL is a caller bug, and it is -- but a release build has no assert and
+     went straight on to dereference it. Refusing costs nothing and turns a crash into a no-op. */
+  if (!s || s[0] == 0)
     return;
 
   cdCanvasGetTextSize(canvas, s, &w, &h);

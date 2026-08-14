@@ -1817,6 +1817,11 @@ static void cdcreatecanvas(cdCanvas* canvas, void *data)
   char* str_data = (char*)data;
   char* res_ptr = NULL;
 
+  /* NULL went straight into strstr below. CD reports a canvas it cannot create by returning
+     without setting ctxcanvas, which cdCreateCanvas turns into a NULL canvas. */
+  if (!str_data)
+    return;
+
   if (strstr(str_data, "-a"))
     use_alpha = 1;
 
@@ -1837,8 +1842,11 @@ static void cdcreatecanvas(cdCanvas* canvas, void *data)
     sscanf(str_data, "%dx%d %p %p %p", &w, &h, &r, &g, &b);
 #endif
 
-  if (w == 0) w = 1;
-  if (h == 0) h = 1;
+  /* A data string that does not parse used to be silently rounded up into a 1x1 canvas, so
+     cdCreateCanvas(CD_IMAGERGB, "invalid_size") succeeded and the caller drew into a canvas it
+     never asked for. A size is required, and it has to be positive. */
+  if (w <= 0 || h <= 0)
+    return;
 
   ctxcanvas = (cdCtxCanvas *)malloc(sizeof(cdCtxCanvas));
   memset(ctxcanvas, 0, sizeof(cdCtxCanvas));

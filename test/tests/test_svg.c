@@ -76,11 +76,11 @@ int test_svg_text_features(void) {
     cdCanvasForeground(canvas, CD_BLUE);
     cdCanvasText(canvas, 300, 200, "Centered Text");
 
-    cdCanvasTextAlignment(canvas, CD_LEFT);
+    cdCanvasTextAlignment(canvas, CD_WEST);
     cdCanvasForeground(canvas, CD_GREEN);
     cdCanvasText(canvas, 300, 220, "Left Aligned");
 
-    cdCanvasTextAlignment(canvas, CD_RIGHT);
+    cdCanvasTextAlignment(canvas, CD_EAST);
     cdCanvasForeground(canvas, CD_RED);
     cdCanvasText(canvas, 300, 240, "Right Aligned");
 
@@ -190,15 +190,18 @@ int test_svg_styling_features(void) {
     }
 
     /* Test transparency/opacity */
-    cdCanvasOpacity(canvas, 128);  /* 50% opacity */
+    /* opacity lives in the colour alpha; CD has no cdCanvasOpacity */
+    cdCanvasForeground(canvas, cdEncodeAlpha(cdCanvasForeground(canvas, CD_QUERY), 128));  /* 50% opacity */
     cdCanvasForeground(canvas, CD_RED);
     cdCanvasBox(canvas, 100, 200, 250, 350);
 
-    cdCanvasOpacity(canvas, 64);   /* 25% opacity */
+    /* opacity lives in the colour alpha; CD has no cdCanvasOpacity */
+    cdCanvasForeground(canvas, cdEncodeAlpha(cdCanvasForeground(canvas, CD_QUERY), 64));   /* 25% opacity */
     cdCanvasForeground(canvas, CD_BLUE);
     cdCanvasBox(canvas, 150, 250, 200, 300);
 
-    cdCanvasOpacity(canvas, 255);  /* Full opacity */
+    /* opacity lives in the colour alpha; CD has no cdCanvasOpacity */
+    cdCanvasForeground(canvas, cdEncodeAlpha(cdCanvasForeground(canvas, CD_QUERY), 255));  /* Full opacity */
 
     /* Test gradient simulation with multiple colored rectangles */
     for (int i = 0; i < 50; i++) {

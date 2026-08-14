@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cd.h>
+#include <cddebug.h>
 
 int main() {
     printf("CD Basic Test\n");
@@ -16,8 +17,11 @@ int main() {
     printf("CD Version Date: %s\n", cdVersionDate());
     printf("CD Version Number: %d\n", cdVersionNumber());
 
-    // Test debug canvas creation (should always work)
-    cdCanvas* canvas = cdCreateCanvas(cdContextDebug(), NULL);
+    /* The debug driver logs every call to a file, so it needs a filename: passing NULL means
+       there is nothing for it to open and the canvas comes back NULL. It is otherwise the one
+       driver guaranteed to exist on every platform, which is what makes it the right one for a
+       test that only asks whether the library works at all. */
+    cdCanvas* canvas = cdCreateCanvas(CD_DEBUG, "basic_test.deb");
     if (!canvas) {
         printf("ERROR: Failed to create debug canvas\n");
         return 1;
@@ -57,6 +61,8 @@ int main() {
     // Cleanup
     cdKillCanvas(canvas);
     printf("Canvas destroyed successfully\n");
+
+    remove("basic_test.deb");
 
     printf("\nAll basic tests passed!\n");
     return 0;

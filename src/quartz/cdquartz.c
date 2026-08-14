@@ -1594,6 +1594,14 @@ void cdquartzKillCanvas(cdCtxCanvas* ctxcanvas)
   free(ctxcanvas);
 }
 
+/* True when this canvas is driven by the Quartz base, and so has a cdCtxImage this driver may
+   interpret. The double buffer driver needs to know: it is handed a target canvas by the
+   application, and reading a foreign driver's image struct as a Quartz one crashes. */
+int cdquartzIsCanvas(cdCanvas* canvas)
+{
+  return canvas != NULL && canvas->cxCreateImage == cdcreateimage;
+}
+
 void cdquartzInitTable(cdCanvas* canvas)
 {
   canvas->cxFlush = cdflush;

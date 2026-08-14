@@ -527,8 +527,62 @@ if(CD_ENABLE_LUA AND LUA_FOUND)
         list(APPEND CDLUA_SOURCES src/lua5/cdluapdf5.c)
     endif()
 
-    if(CD_ENABLE_IM)
+    # src/lua5/cdluaim5.c is the CD-IM bridge for Lua and calls into imlua, IM's own Lua
+    # binding -- not into IM itself. It was compiled whenever CD_ENABLE_IM was on, but imlua was
+    # only looked for after the library had been declared, so on any machine without imlua
+    # installed the whole cdlua target failed to link on imlua_checkimage and friends. Look
+    # first, then decide.
+    # Find and link IM Lua libraries
+    # Check if libraries were explicitly provided (e.g., by homebrew formula)
+    if(NOT DEFINED IMLUA_LIBRARY)
+        # First try to find them alongside the IM library
+        get_filename_component(IM_LIB_DIR "${IM_LIBRARY}" DIRECTORY)
+
+        # Try multiple approaches to find IM Lua libraries
+        find_library(IMLUA_LIBRARY
+            NAMES imlua libimlua
+            HINTS ${IM_LIB_DIR}
+            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
+            PATH_SUFFIXES lib)
+
+        # If not found, try explicit homebrew path based on dependency
+        if(NOT IMLUA_LIBRARY)
+            # Check if we can construct the path from HOMEBREW_PREFIX
+            if(DEFINED ENV{HOMEBREW_PREFIX})
+                set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
+                find_library(IMLUA_LIBRARY
+                    NAMES imlua libimlua
+                    PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
+                    NO_DEFAULT_PATH)
+            endif()
+        endif()
+    endif()
+
+    if(NOT DEFINED IMLUA_PROCESS_LIBRARY)
+        find_library(IMLUA_PROCESS_LIBRARY
+            NAMES imlua_process libimlua_process
+            HINTS ${IM_LIB_DIR}
+            PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
+            PATH_SUFFIXES lib)
+
+        # If not found, try explicit homebrew path
+        if(NOT IMLUA_PROCESS_LIBRARY)
+            if(DEFINED ENV{HOMEBREW_PREFIX})
+                set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
+                find_library(IMLUA_PROCESS_LIBRARY
+                    NAMES imlua_process libimlua_process
+                    PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
+                    NO_DEFAULT_PATH)
+            endif()
+        endif()
+    endif()
+
+
+    if(CD_ENABLE_IM AND IM_FOUND AND IMLUA_LIBRARY)
         list(APPEND CDLUA_SOURCES src/lua5/cdluaim5.c)
+        set(CDLUA_WITH_IM TRUE)
+    elseif(CD_ENABLE_IM)
+        message(STATUS "cdlua: building without IM support (imlua not found)")
     endif()
 
     # Only add Windows-specific backends if enabled and on Windows
@@ -544,68 +598,15 @@ if(CD_ENABLE_LUA AND LUA_FOUND)
     target_include_directories(cdlua PRIVATE ${LUA_INCLUDE_DIR})
     target_link_libraries(cdlua PRIVATE cd ${LUA_LIBRARIES})
 
-    # Link IM Lua libraries when IM integration is enabled
-    if(CD_ENABLE_IM AND IM_FOUND)
+    # Link IM and its Lua binding only when the bridge that needs them is in the target
+    if(CDLUA_WITH_IM)
         target_include_directories(cdlua PRIVATE ${IM_INCLUDE_DIR})
-        target_link_libraries(cdlua PRIVATE ${IM_LIBRARY})
+        target_link_libraries(cdlua PRIVATE ${IM_LIBRARY} ${IMLUA_LIBRARY})
+        message(STATUS "cdlua: IM support through ${IMLUA_LIBRARY}")
 
-        # Find and link IM Lua libraries
-        # Check if libraries were explicitly provided (e.g., by homebrew formula)
-        if(NOT DEFINED IMLUA_LIBRARY)
-            # First try to find them alongside the IM library
-            get_filename_component(IM_LIB_DIR "${IM_LIBRARY}" DIRECTORY)
-
-            # Try multiple approaches to find IM Lua libraries
-            find_library(IMLUA_LIBRARY
-                NAMES imlua libimlua
-                HINTS ${IM_LIB_DIR}
-                PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
-                PATH_SUFFIXES lib)
-
-            # If not found, try explicit homebrew path based on dependency
-            if(NOT IMLUA_LIBRARY)
-                # Check if we can construct the path from HOMEBREW_PREFIX
-                if(DEFINED ENV{HOMEBREW_PREFIX})
-                    set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
-                    find_library(IMLUA_LIBRARY
-                        NAMES imlua libimlua
-                        PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
-                        NO_DEFAULT_PATH)
-                endif()
-            endif()
-        endif()
-
-        if(NOT DEFINED IMLUA_PROCESS_LIBRARY)
-            find_library(IMLUA_PROCESS_LIBRARY
-                NAMES imlua_process libimlua_process
-                HINTS ${IM_LIB_DIR}
-                PATHS ${IM_LIBRARY_DIR} /opt/homebrew/lib /usr/local/lib /usr/lib
-                PATH_SUFFIXES lib)
-
-            # If not found, try explicit homebrew path
-            if(NOT IMLUA_PROCESS_LIBRARY)
-                if(DEFINED ENV{HOMEBREW_PREFIX})
-                    set(HOMEBREW_PREFIX $ENV{HOMEBREW_PREFIX})
-                    find_library(IMLUA_PROCESS_LIBRARY
-                        NAMES imlua_process libimlua_process
-                        PATHS ${HOMEBREW_PREFIX}/lib ${HOMEBREW_PREFIX}/Cellar/tecgraf-im/*/lib
-                        NO_DEFAULT_PATH)
-                endif()
-            endif()
-        endif()
-
-        if(IMLUA_LIBRARY)
-            target_link_libraries(cdlua PRIVATE ${IMLUA_LIBRARY})
-            message(STATUS "Found IM Lua library: ${IMLUA_LIBRARY}")
-        else()
-            message(WARNING "IM Lua library not found, CD Lua IM integration may not work")
-        endif()
-
+        # optional: only the process bindings need it, and cdluaim5.c does not
         if(IMLUA_PROCESS_LIBRARY)
             target_link_libraries(cdlua PRIVATE ${IMLUA_PROCESS_LIBRARY})
-            message(STATUS "Found IM Lua Process library: ${IMLUA_PROCESS_LIBRARY}")
-        else()
-            message(WARNING "IM Lua Process library not found")
         endif()
     endif()
 

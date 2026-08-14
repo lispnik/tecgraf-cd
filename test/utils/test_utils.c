@@ -1,9 +1,12 @@
 #include "test_utils.h"
+
+#include <math.h>
 #include <cdsvg.h>
 #include <cdirgb.h>
 #include <cddbuf.h>
 #include <cddebug.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 
 /* Test statistics */
@@ -325,4 +328,93 @@ int test_color_difference(long color1, long color2) {
     cdDecodeColor(color2, &r2, &g2, &b2);
 
     return abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2);
+}
+
+void test_rgb_to_hsv(unsigned char r, unsigned char g, unsigned char b,
+                     double* h, double* s, double* v)
+{
+    double red = r / 255.0, green = g / 255.0, blue = b / 255.0;
+    double max = red > green ? (red > blue ? red : blue) : (green > blue ? green : blue);
+    double min = red < green ? (red < blue ? red : blue) : (green < blue ? green : blue);
+    double delta = max - min;
+
+    *v = max;
+    *s = (max > 0.0) ? delta / max : 0.0;
+
+    if (delta == 0.0)
+    {
+        *h = 0.0;               /* grey: hue is undefined, and zero is the usual convention */
+        return;
+    }
+
+    if (max == red)
+        *h = 60.0 * fmod((green - blue) / delta, 6.0);
+    else if (max == green)
+        *h = 60.0 * (((blue - red) / delta) + 2.0);
+    else
+        *h = 60.0 * (((red - green) / delta) + 4.0);
+
+    if (*h < 0.0)
+        *h += 360.0;
+}
+
+void test_hsv_to_rgb(double h, double s, double v,
+                     unsigned char* r, unsigned char* g, unsigned char* b)
+{
+    double chroma = v * s;
+    double sector = fmod(h < 0 ? h + 360.0 : h, 360.0) / 60.0;
+    double x = chroma * (1.0 - fabs(fmod(sector, 2.0) - 1.0));
+    double m = v - chroma;
+    double red = 0, green = 0, blue = 0;
+
+    switch ((int)sector)
+    {
+        case 0:  red = chroma; green = x;      blue = 0;      break;
+        case 1:  red = x;      green = chroma; blue = 0;      break;
+        case 2:  red = 0;      green = chroma; blue = x;      break;
+        case 3:  red = 0;      green = x;      blue = chroma; break;
+        case 4:  red = x;      green = 0;      blue = chroma; break;
+        default: red = chroma; green = 0;      blue = x;      break;
+    }
+
+    /* round rather than truncate, so a round trip through HSV lands back on the same byte */
+    *r = (unsigned char)((red + m) * 255.0 + 0.5);
+    *g = (unsigned char)((green + m) * 255.0 + 0.5);
+    *b = (unsigned char)((blue + m) * 255.0 + 0.5);
+}
+
+
+/* Memory reporting. These were declared in test_utils.h but never implemented, so any test
+   calling them failed to link -- test_performance did, and that failure was invisible behind
+   the earlier compile errors. Resident set size is the honest thing to report here: it is what
+   the process actually holds, and it needs no allocator hooks. */
+static long s_memory_baseline_kb = 0;
+
+static long test_resident_kb(void)
+{
+    struct rusage usage;
+
+    if (getrusage(RUSAGE_SELF, &usage) != 0)
+        return 0;
+
+#ifdef __APPLE__
+    return usage.ru_maxrss / 1024;   /* macOS reports bytes */
+#else
+    return usage.ru_maxrss;          /* Linux reports kilobytes */
+#endif
+}
+
+void test_memory_usage_start(void)
+{
+    s_memory_baseline_kb = test_resident_kb();
+}
+
+void test_memory_usage_report(const char* test_name)
+{
+    long now_kb = test_resident_kb();
+
+    /* ru_maxrss is a high-water mark, so this can only grow; it is a leak indicator, not a
+       measure of what is live. */
+    printf("    [%s] peak resident: %ld KB (%+ld KB since start)\n",
+           test_name ? test_name : "memory", now_kb, now_kb - s_memory_baseline_kb);
 }

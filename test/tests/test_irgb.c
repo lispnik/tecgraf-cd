@@ -5,6 +5,8 @@
 
 #include "test_utils.h"
 
+#include <sys/time.h>   /* gettimeofday */
+
 int test_rgb_canvas_creation(void) {
     printf("  Testing RGB canvas creation...\n");
 
@@ -89,21 +91,23 @@ int test_image_data_access(void) {
         }
     }
 
-    /* Test image data retrieval */
-    unsigned char* rgb_data = cdCanvasGetImageRGB(canvas);
-    if (rgb_data) {
-        /* Verify some pixel values */
-        /* RGB data is typically stored as R,G,B,R,G,B... */
-        int pixel_index = (50 * 100 + 50) * 3;  /* Middle pixel */
-        unsigned char r = rgb_data[pixel_index];
-        unsigned char g = rgb_data[pixel_index + 1];
-        unsigned char b = rgb_data[pixel_index + 2];
+    /* Read the canvas back. cdCanvasGetImageRGB fills three caller-owned planes -- one per
+       component -- rather than returning an interleaved buffer. */
+    {
+        int w = 100, h = 100, middle = 50 * w + 50;
+        unsigned char* plane_r = malloc((size_t)w * h);
+        unsigned char* plane_g = malloc((size_t)w * h);
+        unsigned char* plane_b = malloc((size_t)w * h);
 
-        printf("    Middle pixel RGB: (%d,%d,%d)\n", r, g, b);
-        TEST_ASSERT(b == 128, "Blue component should be 128");
+        cdCanvasGetImageRGB(canvas, plane_r, plane_g, plane_b, 0, 0, w, h);
 
-        /* Clean up image data */
-        free(rgb_data);
+        printf("    Middle pixel RGB: (%d,%d,%d)\n",
+               plane_r[middle], plane_g[middle], plane_b[middle]);
+        TEST_ASSERT(plane_b[middle] == 128, "Blue component should be 128");
+
+        free(plane_r);
+        free(plane_g);
+        free(plane_b);
     }
 
     test_destroy_canvas(canvas);
