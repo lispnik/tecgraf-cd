@@ -35,6 +35,9 @@ option(CD_ENABLE_HAIKU "Enable Haiku backend (Haiku OS)" ${CD_PLATFORM_HAIKU})
 option(CD_ENABLE_QUARTZ "Enable Quartz backend (macOS only)" ON)
 option(CD_ENABLE_LUA "Enable Lua bindings" ON)
 option(CD_ENABLE_CGM "Enable CGM backend" ON)
+option(CD_ENABLE_PS "Enable PostScript backend" ON)
+option(CD_ENABLE_DXF "Enable DXF backend" ON)
+option(CD_ENABLE_DGN "Enable MicroStation DGN backend" ON)
 option(CD_ENABLE_SVG "Enable SVG backend" ON)
 option(CD_ENABLE_SIM "Enable SIM backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
@@ -299,10 +302,27 @@ if(CD_ENABLE_PPTX)
     list(APPEND CD_DRIVER_SOURCES ${MINIZIP_SOURCES})
 endif()
 
-# CGM support
+# CGM support. src/intcgm is the CGM *interpreter* (cdplayCGM); src/drv/cdcgm.c is the
+# *writer* (cdContextCGM), and was in no source list at all -- so CD_CGM did not exist and
+# every caller got a NULL canvas.
 if(CD_ENABLE_CGM)
     file(GLOB CGM_SOURCES src/intcgm/*.c)
-    list(APPEND CD_DRIVER_SOURCES ${CGM_SOURCES})
+    # src/drv/cgm.c is the metafile writer cdcgm.c is built on, and was equally unlisted
+    list(APPEND CD_DRIVER_SOURCES ${CGM_SOURCES} src/drv/cdcgm.c src/drv/cgm.c)
+endif()
+
+# PostScript, DXF and DGN: portable, dependency-free file drivers that were likewise present
+# in src/drv but absent from the build, which is why CD_PS and CD_DXF resolved to nothing.
+if(CD_ENABLE_PS)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cdps.c)
+endif()
+
+if(CD_ENABLE_DXF)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cddxf.c)
+endif()
+
+if(CD_ENABLE_DGN)
+    list(APPEND CD_DRIVER_SOURCES src/drv/cddgn.c)
 endif()
 
 # SVG support
@@ -681,6 +701,9 @@ if(CD_QUARTZ_PDF)
     message(STATUS "  PDF backend (Quartz/CGPDFContext): ON, so CD_PDF works without PDFlib")
 endif()
 message(STATUS "  CGM backend: ${CD_ENABLE_CGM}")
+message(STATUS "  PS backend: ${CD_ENABLE_PS}")
+message(STATUS "  DXF backend: ${CD_ENABLE_DXF}")
+message(STATUS "  DGN backend: ${CD_ENABLE_DGN}")
 message(STATUS "  SVG backend: ${CD_ENABLE_SVG}")
 message(STATUS "  SIM backend: ${CD_ENABLE_SIM}")
 message(STATUS "  IM integration: ${CD_ENABLE_IM}")

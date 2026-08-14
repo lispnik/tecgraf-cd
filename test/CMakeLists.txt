@@ -93,6 +93,12 @@ endif()
 # Font access tests
 add_cd_test(test_font_access tests/test_font_access.c)
 
+# The portable file drivers. Guarded by the same options that build them, so turning one off
+# does not turn the suite red.
+if(CD_ENABLE_PS AND CD_ENABLE_CGM AND CD_ENABLE_DXF AND CD_ENABLE_DGN)
+    add_cd_test(test_vector_drivers tests/test_vector_drivers.c)
+endif()
+
 # Quartz backend tests (macOS)
 if(APPLE AND CD_ENABLE_QUARTZ)
     add_cd_test(test_quartz tests/test_quartz.c)
