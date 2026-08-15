@@ -103,6 +103,9 @@ endif()
 if(APPLE AND CD_ENABLE_QUARTZ)
     add_cd_test(test_quartz tests/test_quartz.c)
 
+    # cdInitContextPlus/cdFinishContextPlus, which Quartz answers by registering nothing
+    add_cd_test(test_quartz_plus tests/test_quartz_plus.c)
+
     # The CGPDFContext-based CD_PDF driver, built whenever the PDFlib one is not
     if(NOT CD_ENABLE_PDF)
         add_cd_test(test_quartz_pdf tests/test_quartz_pdf.c)

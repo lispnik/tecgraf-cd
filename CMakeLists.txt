@@ -12,9 +12,8 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 
 # Installed libraries must be able to find their siblings. cdlua links against
-# cd, whose install name is @rpath/libcd.<v>.dylib, so without an install rpath
-# the installed cdlua cannot be loaded at all. Relative to the loader so that
-# the install tree stays relocatable.
+# cd, so without an install rpath the installed cdlua cannot be loaded at all.
+# Relative to the loader so that the install tree stays relocatable.
 if(APPLE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
 else()
@@ -266,6 +265,11 @@ elseif(CD_PLATFORM_MACOS)
             src/quartz/cdquartzdbuf.c
             src/quartz/cdquartznative.m
             src/quartz/cdquartzclipboard.m
+            # cdInitContextPlus/cdFinishContextPlus. Quartz has no separate anti-aliased driver
+            # because it does not need one; these exist so that applications asking for the Plus
+            # contexts link, and get the ordinary already anti-aliased ones. Do not compile this
+            # together with src/cairo/cdcairoplus.c -- both define the same two functions.
+            src/quartz/cdquartzplus.c
         )
         # Native PDF through CGPDFContext, so that CD_PDF exists without PDFlib.
         # Mutually exclusive with src/drv/cdpdf.c: both define cdContextPDF.
