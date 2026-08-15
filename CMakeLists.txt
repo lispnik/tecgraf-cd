@@ -20,6 +20,23 @@ else()
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
+# An INSTALLED library is identified by where it was installed, not by @rpath.
+#
+# CMake's default gives the installed dylib an id of @rpath/libcd.<v>.dylib, which every
+# program linking against it then records -- and a program that does not happen to carry a
+# matching -rpath cannot start at all:
+#
+#   dyld: Library not loaded: @rpath/libcd.5.dylib
+#
+# which is what happened to IUP's samples, since they link -lcd from a prefix rather than
+# adopting an rpath for it. The sibling library installs the same way and is absolute
+# (/opt/homebrew/opt/tecgraf-im/lib/libim.dylib), as is the Homebrew convention generally, so
+# match it. This applies only to the install tree; the build tree keeps @rpath, which is what
+# the tests link against.
+if(APPLE)
+    set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
 # Options for different backends
 option(CD_ENABLE_CAIRO "Enable Cairo backend" ON)
 option(CD_ENABLE_XRENDER "Enable X11 XRender backend" ON)
