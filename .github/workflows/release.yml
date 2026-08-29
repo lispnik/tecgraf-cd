@@ -125,7 +125,16 @@ jobs:
           gh release download "$IM_VERSION" --repo lispnik/tecgraf-im \
             --pattern "$asset" --dir . --clobber
           tar -xzf "$asset" -C "$GITHUB_WORKSPACE/im"
+          test -d "$GITHUB_WORKSPACE/im/include" \
+            || { echo "::error::no include/ in $asset"; ls -R "$GITHUB_WORKSPACE/im" | head -30; exit 1; }
           echo "IM_ROOT=$GITHUB_WORKSPACE/im" >> "$GITHUB_ENV"
+          # libcd links libim, so libim has to be findable for the test suite
+          # and for `ldd -r` in the undefined-symbol check. ci-linux.yml sets
+          # this and release.yml did not, which made the check report libcd's
+          # two IM references -- imImageGetAttribReal and
+          # imImageGetAttribString, the only ones it has -- as undefined.
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/im/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          echo "DYLD_LIBRARY_PATH=$GITHUB_WORKSPACE/im/lib:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
       - name: Repair the IM install names (macOS)
         if: matrix.platform == 'macos'

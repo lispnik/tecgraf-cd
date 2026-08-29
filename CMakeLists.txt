@@ -411,7 +411,28 @@ set_target_properties(cd PROPERTIES
 
 # Windows .def file support for symbol export
 if(WIN32 AND BUILD_SHARED_LIBS)
-    target_sources(cd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/cd_windows.def)
+    set(CD_DEF_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/cd_windows.def)
+
+    # cd_windows.def lists 467 exports and not one of the IM bridge; those
+    # live in src/cdim.def, which nothing referenced. So a Windows build with
+    # CD_ENABLE_IM=ON compiled src/drv/cdim.c and then exported none of it:
+    # the DLL had the driver inside and no way to reach it, and a consumer
+    # asking whether the bridge was available got a truthful no from a build
+    # that had been configured to provide it.
+    #
+    # A DLL has a single export table, so the two files have to be merged
+    # rather than both handed to the linker.
+    if(CD_ENABLE_IM AND IM_FOUND)
+        file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/cd_windows.def _cd_def)
+        file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/cdim.def _im_def)
+        # Drop cdim.def's own EXPORTS header; its names join the list above.
+        string(REGEX REPLACE "^[ \t\r\n]*EXPORTS[ \t\r\n]*" "" _im_exports "${_im_def}")
+        set(CD_DEF_FILE ${CMAKE_CURRENT_BINARY_DIR}/cd_windows_im.def)
+        file(WRITE ${CD_DEF_FILE} "${_cd_def}\n${_im_exports}\n")
+        message(STATUS "Windows exports: cd_windows.def + cdim.def")
+    endif()
+
+    target_sources(cd PRIVATE ${CD_DEF_FILE})
 endif()
 
 # Compiler definitions
