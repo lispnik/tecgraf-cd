@@ -10,10 +10,30 @@ jobs:
   build:
     timeout-minutes: 60
     strategy:
+      # Without this an arm64 failure would cancel the amd64 jobs and hide
+      # whether a problem is architecture-specific, which is the main reason
+      # for building both.
+      fail-fast: false
       matrix:
         build_type: [Release, Debug]
+        # ubuntu-24.04-arm is GitHub's aarch64 runner, free for public
+        # repositories. Added because consumers had no arm64 Linux build of CD
+        # to link against: Linux here was x86_64 only, so a downstream project
+        # could ship amd64 and macOS and nothing else.
+        #
+        # Every apt package named below is arch-independent, so the matrix is
+        # the only change needed. The artifact name carries the architecture so
+        # the two do not collide.
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+            im_artifact: im-libs-ubuntu-24.04
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            im_artifact: im-libs-ubuntu-24.04-arm
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    name: Linux ${{ matrix.arch }} ${{ matrix.build_type }}
 
     steps:
     - uses: actions/checkout@v4
@@ -23,7 +43,7 @@ jobs:
       with:
         path: |
           ~/.cache/apt
-        key: ${{ runner.os }}-deps-v2-${{ hashFiles('.github/workflows/ci-linux.yml') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-deps-v2-${{ hashFiles('.github/workflows/ci-linux.yml') }}
 
     - name: Install system dependencies
       run: |
@@ -68,7 +88,7 @@ jobs:
         workflow: ci-linux.yml
         repo: lispnik/tecgraf-im
         branch: master
-        name: im-libs-ubuntu-24.04
+        name: ${{ matrix.im_artifact }}
         path: im-git/install/lib
         if_no_artifact_found: warn
 
@@ -117,11 +137,11 @@ jobs:
 
     - name: Package artifacts
       run: |
-        tar -czf cd-linux-${{ matrix.build_type }}.tar.gz install/
+        tar -czf cd-linux-${{ matrix.arch }}-${{ matrix.build_type }}.tar.gz install/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: cd-linux-${{ matrix.build_type }}
-        path: cd-linux-${{ matrix.build_type }}.tar.gz
+        name: cd-linux-${{ matrix.arch }}-${{ matrix.build_type }}
+        path: cd-linux-${{ matrix.arch }}-${{ matrix.build_type }}.tar.gz
 
