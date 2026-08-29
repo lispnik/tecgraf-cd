@@ -24,12 +24,22 @@ jobs:
         # Every apt package named below is arch-independent, so the matrix is
         # the only change needed. The artifact name carries the architecture so
         # the two do not collide.
+        #
+        # arch is a matrix DIMENSION, not something the include entries
+        # introduce. An include entry whose keys are all absent from the base
+        # matrix is merged into every combination rather than adding one, so
+        # listing runner/arch/im_artifact only under include had the arm64
+        # entry overwrite the amd64 entry in both build types: the amd64 job
+        # vanished and only cd-linux-arm64-* was ever published. Naming arch
+        # here means each include matches just the combinations that already
+        # have that arch, and adds the runner and artifact to them.
+        arch: [amd64, arm64]
         include:
-          - runner: ubuntu-24.04
-            arch: amd64
+          - arch: amd64
+            runner: ubuntu-24.04
             im_artifact: im-libs-ubuntu-24.04
-          - runner: ubuntu-24.04-arm
-            arch: arm64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
             im_artifact: im-libs-ubuntu-24.04-arm
 
     runs-on: ${{ matrix.runner }}
