@@ -145,6 +145,19 @@ jobs:
         cd build
         ctest --output-on-failure
 
+    # Compiled is not the same as reachable; the Windows build shipped
+    # src/drv/cdim.c with none of it exported. Cheap to assert here too, and
+    # it means a regression fails in CI rather than at a release tag.
+    - name: Verify the IM driver is present
+      run: |
+        lib="$(find build -name 'libcd.so.*.*' | head -1)"
+        test -n "$lib" || { echo "::error::no libcd found"; exit 1; }
+        if ! nm -D --defined-only "$lib" | awk '{print $NF}' | grep -q '^cdCanvasPutImImage$'; then
+          echo "::error::$lib has no cdCanvasPutImImage -- built without the IM driver"
+          exit 1
+        fi
+        echo "$lib exports cdCanvasPutImImage"
+
     - name: Install
       run: |
         cd build

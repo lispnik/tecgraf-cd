@@ -106,6 +106,23 @@ jobs:
         cd build
         cmake --build . --config ${{ matrix.build_type }} --parallel
 
+    # Compiled is not the same as reachable. Windows exports are driven by a
+    # .def file, so src/drv/cdim.c can build into the DLL while none of its
+    # entry points are exported -- which is exactly what happened, and it
+    # reached a release tag because only release.yml checked. Export names are
+    # stored in the DLL as plain ASCII, so a grep finds them without nm,
+    # strings or dumpbin, none of which are reliably on PATH here.
+    - name: Verify the IM driver is exported
+      shell: bash
+      run: |
+        dll="$(find build -name 'cd.dll' | head -1)"
+        test -n "$dll" || { echo "::error::no cd.dll found"; exit 1; }
+        if ! grep -aq 'cdCanvasPutImImage' "$dll"; then
+          echo "::error::$dll does not export cdCanvasPutImImage -- the IM driver is unreachable"
+          exit 1
+        fi
+        echo "$dll exports cdCanvasPutImImage"
+
     - name: Run tests
       run: |
         cd build
