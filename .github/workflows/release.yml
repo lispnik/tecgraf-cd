@@ -5,6 +5,11 @@ name: Release
 # workflow in lispnik/tecgraf-im, so the two projects are released the same
 # way and a change to one is easy to mirror into the other.
 #
+# Built without the Lua bindings: libcdlua is linked against one Lua ABI, so
+# it is useful only to someone already on that exact Lua and dead weight for
+# everyone else. CI still builds it, so the coverage is not lost -- it is
+# simply not part of what ships. tecgraf-im's release workflow does the same.
+#
 # This replaces a workflow that could not publish anything: it triggered on
 # `push: tags` and then gated its upload on `github.event_name == 'release'`,
 # so `git push --tags` built all three platforms and uploaded nothing. It also
@@ -85,7 +90,6 @@ jobs:
             libcairo2-dev libpango1.0-dev \
             libfreetype6-dev libftgl-dev \
             libgl1-mesa-dev libglu1-mesa-dev \
-            liblua5.4-dev lua5.4 \
             libtiff-dev libpng-dev libjpeg-dev zlib1g-dev \
             libexif-dev liblzf-dev liblz4-dev \
             libfftw3-dev libomp-dev libgtk-3-dev
@@ -94,7 +98,7 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           brew install \
-            cmake pkg-config cairo pango freetype ftgl lua \
+            cmake pkg-config cairo pango freetype ftgl \
             libtiff libpng jpeg libexif jasper fftw
           echo "PKG_CONFIG_PATH=$(brew --prefix freetype)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
           echo "FREETYPE_DIR=$(brew --prefix freetype)" >> $GITHUB_ENV
@@ -185,7 +189,7 @@ jobs:
             -DCD_ENABLE_PDF=OFF \
             -DCD_ENABLE_SIM=ON \
             -DCD_ENABLE_IM=ON \
-            -DCD_ENABLE_LUA=ON
+            -DCD_ENABLE_LUA=OFF
 
       - name: Configure (macOS)
         if: matrix.platform == 'macos'
@@ -203,7 +207,7 @@ jobs:
             -DCD_ENABLE_SIM=ON \
             -DCD_ENABLE_IM=ON \
             -DCD_ENABLE_QUARTZ=ON \
-            -DCD_ENABLE_LUA=ON
+            -DCD_ENABLE_LUA=OFF
 
       - name: Configure (Windows)
         if: matrix.platform == 'windows'
