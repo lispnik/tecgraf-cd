@@ -98,6 +98,19 @@ if(CD_ENABLE_XRENDER AND CD_PLATFORM_LINUX)
     if(X11_FOUND)
         find_path(XRENDER_INCLUDE_DIR X11/extensions/Xrender.h ${X11_INCLUDE_DIR})
         find_library(XRENDER_LIBRARY Xrender)
+        # src/xrender/cdxrender.c calls XftFontOpenName, XftDrawCreate and
+        # eight more, so Xft is a hard requirement of this driver -- not an
+        # extra. Linking Xrender without it produced a libcd.so that linked
+        # cleanly (a shared object may keep undefined symbols) and then failed
+        # every dlopen with "undefined symbol: XftFontClose". FindX11 locates
+        # it as X11_Xft_LIB; the find_library is the fallback for an X11
+        # module that does not set that.
+        if(X11_Xft_LIB)
+            set(XFT_LIBRARY ${X11_Xft_LIB})
+        else()
+            find_library(XFT_LIBRARY Xft)
+        endif()
+        find_path(XFT_INCLUDE_DIR X11/Xft/Xft.h ${X11_INCLUDE_DIR} /usr/include/X11/Xft)
     endif()
 endif()
 
@@ -422,6 +435,14 @@ elseif(CD_PLATFORM_LINUX)
     if(CD_ENABLE_XRENDER AND XRENDER_LIBRARY)
         target_include_directories(cd PRIVATE ${XRENDER_INCLUDE_DIR})
         target_link_libraries(cd PRIVATE ${XRENDER_LIBRARY})
+        if(XFT_LIBRARY)
+            target_include_directories(cd PRIVATE ${XFT_INCLUDE_DIR})
+            target_link_libraries(cd PRIVATE ${XFT_LIBRARY})
+        else()
+            message(WARNING
+                "XRender backend enabled but Xft was not found; libcd will "
+                "have undefined Xft symbols and will fail to dlopen.")
+        endif()
         target_compile_definitions(cd PRIVATE CD_ENABLE_XRENDER)
     endif()
 elseif(CD_PLATFORM_MACOS)

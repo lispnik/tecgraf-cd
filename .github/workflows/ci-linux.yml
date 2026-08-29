@@ -145,6 +145,23 @@ jobs:
         cd build
         cmake --install . --config ${{ matrix.build_type }}
 
+    # A shared object is allowed to keep undefined symbols, so a missing
+    # -lXft links cleanly and only fails at dlopen, in whatever consumes it.
+    # That is how libcd shipped for a while calling ten Xft functions without
+    # linking Xft: every downstream dlopen died on "undefined symbol:
+    # XftFontClose" while this build stayed green. `ldd -r` resolves symbols
+    # as well as libraries, which is what catches it here instead.
+    - name: Check for undefined symbols
+      run: |
+        lib="$(find install -name 'libcd.so.*.*' | head -1)"
+        test -n "$lib" || { echo "::error::no libcd to check"; exit 1; }
+        if ldd -r "$lib" 2>&1 | grep -q "undefined symbol"; then
+          echo "::error::$lib has undefined symbols:"
+          ldd -r "$lib" 2>&1 | grep "undefined symbol" | sort -u
+          exit 1
+        fi
+        echo "$lib: no undefined symbols"
+
     - name: Package artifacts
       run: |
         tar -czf cd-linux-${{ matrix.arch }}-${{ matrix.build_type }}.tar.gz install/
