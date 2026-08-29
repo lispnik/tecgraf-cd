@@ -45,7 +45,11 @@ jobs:
           --pattern $asset --dir . --clobber
         if ($LASTEXITCODE -ne 0) { throw "could not download $asset" }
 
-        $root = Join-Path $env:GITHUB_WORKSPACE "im"
+        # Forward slashes, matching release.yml. The workspace on a Windows
+        # runner is D:\a\<repo>\<repo>; CMake takes forward slashes on Windows
+        # throughout, and normalising here keeps one fewer quoting question
+        # between here and the compiler.
+        $root = (Join-Path $env:GITHUB_WORKSPACE "im") -replace '\\','/' 
         New-Item -ItemType Directory -Force $root | Out-Null
         Expand-Archive -Path $asset -DestinationPath $root -Force
 

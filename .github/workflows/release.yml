@@ -155,7 +155,7 @@ jobs:
             --pattern $asset --dir . --clobber
           if ($LASTEXITCODE -ne 0) { throw "could not download $asset" }
           # Forward slashes: see the same step in ci-windows.yml.
-          $root = (Join-Path $env:GITHUB_WORKSPACE "im") -replace '\\','/' 
+          $root = (Join-Path $env:GITHUB_WORKSPACE "im") -replace '\\','/'
           New-Item -ItemType Directory -Force $root | Out-Null
           Expand-Archive -Path $asset -DestinationPath $root -Force
           "IM_ROOT=$root" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
