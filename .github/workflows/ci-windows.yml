@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# The IM release this build links against. Kept identical across the three
+# CI workflows and release.yml.
+env:
+  IM_VERSION: v2.0.0
+
 jobs:
   build:
     timeout-minutes: 60
@@ -26,33 +31,34 @@ jobs:
         vcpkg install freetype:x64-windows
         vcpkg integrate install
 
-    # These artifacts expire after GitHub's retention period, which broke every
-    # build regardless of the commit. They are only needed for CD_ENABLE_IM=ON,
-    # and this workflow builds with IM off, so a missing artifact must not fail
-    # the job.
-    - name: Download IM artifacts
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-windows.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: im-libs-windows-2022
-        path: im-git/install/lib
-        if_no_artifact_found: warn
+    # IM comes from a tagged release, not from CI artifacts. See the same step
+    # in ci-linux.yml for why: artifacts expire after 14 days, which is what
+    # forced CD_ENABLE_IM=OFF here. Release assets do not expire, so IM
+    # support is unconditional and a missing download fails the job.
+    - name: Download IM ${{ env.IM_VERSION }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $asset = "tecgraf-im-$env:IM_VERSION-windows-x64.zip"
+        gh release download $env:IM_VERSION --repo lispnik/tecgraf-im `
+          --pattern $asset --dir . --clobber
+        if ($LASTEXITCODE -ne 0) { throw "could not download $asset" }
 
-    - name: Download IM headers
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-windows.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: im-headers-windows-2022
-        path: im-git/install/include
-        if_no_artifact_found: warn
+        $root = Join-Path $env:GITHUB_WORKSPACE "im"
+        New-Item -ItemType Directory -Force $root | Out-Null
+        Expand-Archive -Path $asset -DestinationPath $root -Force
+
+        $implib = Join-Path $root "lib/im.lib"
+        if (-not (Test-Path $implib)) {
+          Get-ChildItem -Recurse $root | Select-Object -First 40 FullName
+          throw "im.lib is missing from $asset"
+        }
+
+        "IM_ROOT=$root" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        # cd.dll links against im.dll, so the DLL has to be findable when the
+        # tests run, not merely when the linker runs.
+        (Join-Path $root "bin") | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
 
     - name: Configure CMake
       run: |
@@ -63,14 +69,14 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=../install `
           -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
           -DBUILD_SHARED_LIBS=ON `
-          -DIM_INCLUDE_DIR=../im-git/install/include `
-          -DIM_LIBRARY=../im-git/install/lib/im.lib `
+          -DIM_INCLUDE_DIR=$env:IM_ROOT/include `
+          -DIM_LIBRARY=$env:IM_ROOT/lib/im.lib `
           -DCD_ENABLE_GDIPLUS=ON `
           -DCD_ENABLE_DIRECT2D=ON `
           -DCD_ENABLE_GL=OFF `
           -DCD_ENABLE_PDF=OFF `
           -DCD_ENABLE_SIM=ON `
-          -DCD_ENABLE_IM=OFF `
+          -DCD_ENABLE_IM=ON `
           -DCD_ENABLE_LUA=OFF
 
     - name: Build

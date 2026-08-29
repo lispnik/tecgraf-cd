@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# The IM release this build links against. Bumping it here is the whole of
+# the version-bump procedure; nothing else names a version.
+env:
+  IM_VERSION: v2.0.0
+
 jobs:
   build:
     timeout-minutes: 60
@@ -37,10 +42,10 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-24.04
-            im_artifact: im-libs-ubuntu-24.04
+            im_asset: linux-amd64
           - arch: arm64
             runner: ubuntu-24.04-arm
-            im_artifact: im-libs-ubuntu-24.04-arm
+            im_asset: linux-arm64
 
     runs-on: ${{ matrix.runner }}
     name: Linux ${{ matrix.arch }} ${{ matrix.build_type }}
@@ -86,33 +91,33 @@ jobs:
           libomp-dev \
           libgtk-3-dev
 
-    # These artifacts expire after GitHub's retention period, which broke every
-    # build regardless of the commit. They are only needed for CD_ENABLE_IM=ON,
-    # and this workflow builds with IM off, so a missing artifact must not fail
-    # the job.
-    - name: Download IM artifacts
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-linux.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: ${{ matrix.im_artifact }}
-        path: im-git/install/lib
-        if_no_artifact_found: warn
-
-    - name: Download IM headers
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-linux.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: im-headers-ubuntu-24.04
-        path: im-git/install/include
-        if_no_artifact_found: warn
+    # IM comes from a tagged release, not from CI artifacts.
+    #
+    # It used to come from artifacts, which expire after 14 days -- so this
+    # build could break for no reason connected to any commit, purely because
+    # nobody had pushed to tecgraf-im recently. The workaround was to build
+    # with CD_ENABLE_IM=OFF and mark the download continue-on-error, which
+    # meant CD shipped for a long time with no IM support at all and nobody
+    # noticed, because a missing dependency was indistinguishable from a
+    # deliberately disabled feature.
+    #
+    # Release assets do not expire. IM support is now unconditional and the
+    # download is allowed to fail the job, because a CD without the IM driver
+    # is not a CD anyone here wants.
+    - name: Download IM ${{ env.IM_VERSION }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        asset="tecgraf-im-${IM_VERSION}-${{ matrix.im_asset }}.tar.gz"
+        mkdir -p "$GITHUB_WORKSPACE/im"
+        gh release download "$IM_VERSION" --repo lispnik/tecgraf-im \
+          --pattern "$asset" --dir . --clobber
+        tar -xzf "$asset" -C "$GITHUB_WORKSPACE/im"
+        test -f "$GITHUB_WORKSPACE/im/lib/libim.so" \
+          || { echo "::error::libim.so is missing from $asset"; ls -R "$GITHUB_WORKSPACE/im" | head -40; exit 1; }
+        echo "IM_ROOT=$GITHUB_WORKSPACE/im" >> "$GITHUB_ENV"
+        echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/im/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
     - name: Configure CMake
       run: |
@@ -121,13 +126,13 @@ jobs:
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_INSTALL_PREFIX=../install \
-          -DIM_INCLUDE_DIR=../im-git/install/include \
-          -DIM_LIBRARY=../im-git/install/lib/libim.so \
+          -DIM_INCLUDE_DIR=$IM_ROOT/include \
+          -DIM_LIBRARY=$IM_ROOT/lib/libim.so \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_GL=ON \
           -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_SIM=ON \
-          -DCD_ENABLE_IM=OFF \
+          -DCD_ENABLE_IM=ON \
           -DCD_ENABLE_LUA=ON
 
     - name: Build

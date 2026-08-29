@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# The IM release this build links against. Kept identical across the three
+# CI workflows and release.yml.
+env:
+  IM_VERSION: v2.0.0
+
 jobs:
   build:
     timeout-minutes: 60
@@ -51,33 +56,46 @@ jobs:
         echo "PKG_CONFIG_PATH=$(brew --prefix freetype)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
         echo "FREETYPE_DIR=$(brew --prefix freetype)" >> $GITHUB_ENV
 
-    # These artifacts expire after GitHub's retention period, which broke every
-    # build regardless of the commit. They are only needed for CD_ENABLE_IM=ON,
-    # and this workflow builds with IM off, so a missing artifact must not fail
-    # the job.
-    - name: Download IM artifacts
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-macos.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: im-libs-macos-15
-        path: im-git/install/lib
-        if_no_artifact_found: warn
+    # IM comes from a tagged release, not from CI artifacts. See the same
+    # step in ci-linux.yml for why: artifacts expire after 14 days, which is
+    # what forced CD_ENABLE_IM=OFF here. Release assets do not expire, so IM
+    # support is unconditional and a missing download fails the job.
+    - name: Download IM ${{ env.IM_VERSION }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        asset="tecgraf-im-${IM_VERSION}-macos-arm64.tar.gz"
+        mkdir -p "$GITHUB_WORKSPACE/im"
+        gh release download "$IM_VERSION" --repo lispnik/tecgraf-im \
+          --pattern "$asset" --dir . --clobber
+        tar -xzf "$asset" -C "$GITHUB_WORKSPACE/im"
+        test -f "$GITHUB_WORKSPACE/im/lib/libim.dylib" \
+          || { echo "::error::libim.dylib is missing from $asset"; ls -R "$GITHUB_WORKSPACE/im" | head -40; exit 1; }
+        echo "IM_ROOT=$GITHUB_WORKSPACE/im" >> "$GITHUB_ENV"
+        echo "DYLD_LIBRARY_PATH=$GITHUB_WORKSPACE/im/lib:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
-    - name: Download IM headers
-      uses: dawidd6/action-download-artifact@v2
-      continue-on-error: true
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: ci-macos.yml
-        repo: lispnik/tecgraf-im
-        branch: master
-        name: im-headers-macos-15
-        path: im-git/install/include
-        if_no_artifact_found: warn
+    # IM builds dylibs with absolute install names -- deliberately, since that
+    # makes them loadable with no rpath. The name baked in is the path on the
+    # machine that built them, which is not where they are now, so libcd would
+    # record a dependency on a path that does not exist here. Restamp each to
+    # where it actually is before linking against it.
+    - name: Repair the IM install names
+      run: |
+        set -euo pipefail
+        for lib in "$IM_ROOT"/lib/libim*.dylib; do
+          [ -f "$lib" ] || continue
+          install_name_tool -id "$lib" "$lib" 2>/dev/null || true
+          otool -L "$lib" | awk 'NR>1 {print $1}' | while read -r dep; do
+            case "$dep" in
+              */libim*.dylib)
+                base="$(basename "$dep")"
+                [ -f "$IM_ROOT/lib/$base" ] \
+                  && install_name_tool -change "$dep" "$IM_ROOT/lib/$base" "$lib" 2>/dev/null || true ;;
+            esac
+          done
+        done
+        otool -L "$IM_ROOT/lib/libim.dylib" | head -5
 
     - name: Configure CMake
       run: |
@@ -86,14 +104,14 @@ jobs:
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_INSTALL_PREFIX=../install \
-          -DIM_INCLUDE_DIR=../im-git/install/include \
-          -DIM_LIBRARY=../im-git/install/lib/libim.dylib \
+          -DIM_INCLUDE_DIR=$IM_ROOT/include \
+          -DIM_LIBRARY=$IM_ROOT/lib/libim.dylib \
           -DCD_ENABLE_CAIRO=ON \
           -DCD_ENABLE_XRENDER=OFF \
           -DCD_ENABLE_GL=ON \
           -DCD_ENABLE_PDF=OFF \
           -DCD_ENABLE_SIM=ON \
-          -DCD_ENABLE_IM=OFF \
+          -DCD_ENABLE_IM=ON \
           -DCD_ENABLE_QUARTZ=ON \
           -DCD_ENABLE_LUA=ON \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
