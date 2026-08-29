@@ -154,7 +154,8 @@ jobs:
           gh release download $env:IM_VERSION --repo lispnik/tecgraf-im `
             --pattern $asset --dir . --clobber
           if ($LASTEXITCODE -ne 0) { throw "could not download $asset" }
-          $root = Join-Path $env:GITHUB_WORKSPACE "im"
+          # Forward slashes: see the same step in ci-windows.yml.
+          $root = (Join-Path $env:GITHUB_WORKSPACE "im") -replace '\\','/' 
           New-Item -ItemType Directory -Force $root | Out-Null
           Expand-Archive -Path $asset -DestinationPath $root -Force
           "IM_ROOT=$root" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
@@ -198,13 +199,22 @@ jobs:
       - name: Configure (Windows)
         if: matrix.platform == 'windows'
         run: |
+          # Assign then interpolate inside quotes rather than writing
+          # $env:IM_ROOT/include bare; see ci-windows.yml for what that cost.
+          $im = $env:IM_ROOT
+          Write-Host "IM_ROOT = $im"
+          if (-not (Test-Path "$im/include/im.h")) { throw "im.h is not at $im/include" }
+          if (-not (Test-Path "$im/lib/im.lib"))   { throw "im.lib is not at $im/lib" }
+
+          $prefix = "${{ github.workspace }}" -replace '\\','/'
+
           cmake -S . -B build `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install `
+            -DCMAKE_INSTALL_PREFIX="$prefix/install" `
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
             -DBUILD_SHARED_LIBS=ON `
-            -DIM_INCLUDE_DIR=$env:IM_ROOT/include `
-            -DIM_LIBRARY=$env:IM_ROOT/lib/im.lib `
+            -DIM_INCLUDE_DIR="$im/include" `
+            -DIM_LIBRARY="$im/lib/im.lib" `
             -DCD_ENABLE_GDIPLUS=ON `
             -DCD_ENABLE_DIRECT2D=ON `
             -DCD_ENABLE_GL=OFF `
