@@ -278,6 +278,15 @@ elseif(CD_PLATFORM_LINUX)
             list(REMOVE_ITEM CAIRO_SOURCES
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcaironative_gdk.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/cairo/cdcairoprn_gtk.c)
+            # Dropping cdcairoprn_gtk.c drops the only definition of
+            # cdContextCairoPrinter this platform has -- there is no X11 Cairo
+            # printer, only the GTK and Win32 ones. cdcairoplus.c still calls
+            # it unless CAIRO_X11 is defined, which is precisely what that
+            # guard is for, and which nothing here was setting. The result
+            # linked (a shared object may keep undefined symbols) and then
+            # failed every dlopen with "undefined symbol:
+            # cdContextCairoPrinter".
+            set(CD_CAIRO_USES_X11 TRUE)
         endif()
         list(APPEND CD_DRIVER_SOURCES ${CAIRO_SOURCES})
     endif()
@@ -431,6 +440,9 @@ elseif(CD_PLATFORM_LINUX)
         target_include_directories(cd PRIVATE ${X11_INCLUDE_DIR})
         target_link_libraries(cd PRIVATE ${X11_LIBRARIES})
         target_compile_definitions(cd PRIVATE CD_X11)
+    endif()
+    if(CD_CAIRO_USES_X11)
+        target_compile_definitions(cd PRIVATE CAIRO_X11)
     endif()
     if(CD_ENABLE_XRENDER AND XRENDER_LIBRARY)
         target_include_directories(cd PRIVATE ${XRENDER_INCLUDE_DIR})
