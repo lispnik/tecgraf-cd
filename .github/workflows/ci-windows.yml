@@ -9,7 +9,7 @@ on:
 # The IM release this build links against. Kept identical across the three
 # CI workflows and release.yml.
 env:
-  IM_VERSION: v2.0.0
+  IM_VERSION: v2.0.1
 
 jobs:
   build:

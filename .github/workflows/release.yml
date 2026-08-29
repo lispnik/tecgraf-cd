@@ -32,7 +32,7 @@ permissions:
 # The IM release CD links against. The same pin as the three CI workflows;
 # bumping it in all four is the whole of the version-bump procedure.
 env:
-  IM_VERSION: v2.0.0
+  IM_VERSION: v2.0.1
 
 jobs:
   build:
@@ -300,6 +300,22 @@ jobs:
           fi
           ls -la "${name}.tar.gz"
 
+      # See the same step in tecgraf-im's release.yml. cmake --install copies
+      # only what this project builds, so cd.dll ships without freetype,
+      # libpng, brotli and zlib -- and LoadLibrary reports that as a failure
+      # to open cd.dll itself.
+      - name: Bundle the vcpkg runtime DLLs (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $vcpkgBin = Join-Path $env:VCPKG_INSTALLATION_ROOT "installed/x64-windows/bin"
+          if (-not (Test-Path $vcpkgBin)) { throw "no vcpkg bin at $vcpkgBin" }
+          $dest = "${{ github.workspace }}/install/bin"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Copy-Item "$vcpkgBin/*.dll" $dest -Force
+          Write-Host "bundled:"
+          Get-ChildItem $dest -Filter *.dll | ForEach-Object { "  " + $_.Name }
+
       - name: Package (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -309,6 +325,38 @@ jobs:
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" |
             Out-File -Encoding ascii "$name.zip.sha256"
           Get-ChildItem "$name.zip"
+
+      # Prove the archive is usable on its own, which is the property that
+      # just failed: an archive missing a dependency looks perfectly well
+      # formed, and LoadLibrary blames the DLL you asked for rather than the
+      # one that is absent. Extracting to a clean directory and loading it is
+      # the only check that actually answers the question.
+      - name: Verify the packaged archive loads (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem "tecgraf-cd-*.zip" | Select-Object -First 1
+          $probe = Join-Path $env:RUNNER_TEMP "loadprobe"
+          Remove-Item -Recurse -Force $probe -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip.FullName -DestinationPath $probe
+
+          $main = "cd.dll"
+          $bin = Join-Path $probe "bin"
+          $env:PATH = "$bin;$env:PATH"
+          $dll = Join-Path $bin $main
+          if (-not (Test-Path $dll)) { throw "$main missing from $($zip.Name)" }
+
+          # One line, not a here-string: PowerShell requires @' and '@ to start
+          # at column 0, and a column-0 line ends the YAML block scalar this
+          # script lives in.
+          $sig = '[DllImport("kernel32", SetLastError=true, CharSet=CharSet.Unicode)] public static extern IntPtr LoadLibraryW(string path);'
+          Add-Type -Namespace Probe -Name Native -MemberDefinition $sig
+          $h = [Probe.Native]::LoadLibraryW($dll)
+          if ($h -eq [IntPtr]::Zero) {
+            $err = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
+            throw "LoadLibrary($main) failed with Win32 error $err -- a dependency is missing from the archive"
+          }
+          Write-Host "$main loaded from a clean extraction of $($zip.Name)"
 
       - name: Upload the packaged archive
         uses: actions/upload-artifact@v4

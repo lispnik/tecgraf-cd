@@ -9,7 +9,7 @@ on:
 # The IM release this build links against. Bumping it here is the whole of
 # the version-bump procedure; nothing else names a version.
 env:
-  IM_VERSION: v2.0.0
+  IM_VERSION: v2.0.1
 
 jobs:
   build:
